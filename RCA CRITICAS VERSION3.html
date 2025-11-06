@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RCA AVERIAS CRITICAS -DIAGNOSTICO Y CONFIRMACION - Gestión de Averías</title>
+
+<!-- Libs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --primary:#E30613;--primary-2:#c70511;--dark:#2C3E50;--muted:#6B7280;--light:#F8F9FA;--white:#fff;--border:#E0E0E0;
+    --ok:#27AE60;--warn:#F39C12;--accent:#3498DB;--shadow:0 4px 6px rgba(0,0,0,.08);--shadow2:0 10px 18px rgba(0,0,0,.12);
+    /* Fondo del Resumen Analítico */
+    --ra-bg:#0f172a;
+  }
+  body{font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#f5f7fa 0%,#c3cfe2 100%);min-height:100vh;padding:20px;color:#1f2937;font-weight:400}
+
+  /* Header */
+  .header{background:var(--white);padding:22px;border-radius:16px;box-shadow:var(--shadow);
+          display:grid;gap:14px;grid-template-columns:140px 1fr 220px;margin-bottom:18px}
+  .logo{width:120px;height:60px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;border-radius:10px;color:var(--muted);font-size:11px;background:var(--light)}
+  .title{text-align:center}
+  .title h1{color:var(--primary);font-size:22px;margin-bottom:4px;font-weight:400}
+  .subtitle{color:var(--muted);text-transform:uppercase;font-size:12px;letter-spacing:.6px}
+  .kpi{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;border-radius:12px;padding:12px 14px;text-align:center;box-shadow:0 8px 18px rgba(227,6,19,.25)}
+  .kpi .l{font-size:11px;opacity:.9;text-transform:uppercase}
+  .kpi .v{font-size:28px;line-height:1;font-weight:400}
+
+  /* Nav */
+  .nav{display:flex;gap:10px;justify-content:center;margin:12px 0 16px;flex-wrap:wrap}
+  .nav button{padding:9px 14px;border:2px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-weight:400;box-shadow:var(--shadow)}
+  .nav button.active,.nav button:hover{border-color:var(--primary);color:var(--primary)}
+
+  .view{display:none}.view.active{display:block}
+  .wrap{background:#fff;border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+
+  /* Form */
+  .process{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:12px}
+  .p-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:var(--shadow);cursor:pointer}
+  .p-card.selected{outline:3px solid rgba(227,6,19,.25)}
+  .f-title{color:var(--primary);text-align:center;margin-bottom:6px;font-weight:400}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+  .fg{display:flex;flex-direction:column}
+  .fg label{margin-bottom:6px;font-size:13px;color:#374151}
+  .fg input,.fg select,.fg textarea{padding:9px 12px;border:2px solid var(--border);border-radius:8px;font-size:14px;font-family:Arial,Helvetica,sans-serif}
+  .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
+  .btn{padding:8px 12px;border:none;border-radius:8px;color:#fff;cursor:pointer;font-weight:400}
+  .ok{background:var(--ok)} .warn{background:var(--warn)} .acc{background:var(--accent)} .del{background:var(--primary)}
+
+  /* Filtros / tablas */
+  .filters{background:var(--light);padding:12px;border-radius:10px;margin-bottom:10px}
+  table{width:100%;border-collapse:collapse;background:#fff}
+  th,td{padding:8px;border-bottom:1px solid var(--border);font-size:13px;text-align:center;font-weight:400}
+  thead{background:#111827;color:#fff}
+  .tbl{overflow-x:auto;border-radius:10px;box-shadow:var(--shadow);margin-top:10px}
+  .empty{color:var(--muted);text-align:center;padding:40px 14px}
+
+  /* Cards / charts */
+  .charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(520px,1fr));gap:16px;margin-top:12px}
+  .card{background:#fff;padding:16px;border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);transition:.2s}
+  .card:hover{transform:translateY(-2px);box-shadow:var(--shadow2)}
+  .card h3{font-size:16px;text-align:center;margin-bottom:6px;font-weight:400;color:#1f2937}
+  .cwrap{min-height:420px;width:100%}
+
+  /* Resumen analítico visual */
+  .ra{display:grid;gap:12px}
+  .ra-head{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+  .ra-kpi{background:linear-gradient(135deg,#1f2937,#374151);color:#fff;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+  .ra-kpi .h{font-size:11px;text-transform:uppercase;opacity:.9}
+  .ra-kpi .n{font-size:24px;line-height:1}
+  .ra-kpi .s{font-size:12px;opacity:.9}
+
+  .ra-box{background:var(--ra-bg);color:#e5e7eb;border-radius:14px;padding:14px}
+  .ra-title{font-size:14px;margin-bottom:10px;color:#e2e8f0}
+  .ra-tri{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+  .ra-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px}
+  .ra-card .t{font-size:12px;opacity:.95;text-transform:uppercase;margin-bottom:6px}
+  .ra-card .v{font-size:18px;line-height:1.1;margin-bottom:2px}
+  .ra-card .p{font-size:12px;color:#cbd5e1}
+
+  .ra-micro{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+  .mini{background:#f9fafb;border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+  .mini .t{font-size:11px;color:#374151;text-transform:uppercase}
+  .mini .v{font-size:15px}
+  .mini .p{font-size:12px;color:#6b7280}
+
+  /* Top tables */
+  .top-table{width:100%}
+  .top-table th,.top-table td{padding:8px 10px}
+  .idx{width:46px}
+  .txtl{text-align:left;white-space:nowrap;max-width:520px;overflow:hidden;text-overflow:ellipsis}
+
+  /* Filtros de tabla de texto */
+  .table-filter{display:flex;gap:8px;align-items:center;margin:6px 0 2px}
+  .table-filter input{padding:7px 10px;border:1px solid var(--border);border-radius:8px}
+
+  /* Toast */
+  .toast{position:fixed;right:16px;bottom:16px;background:#16a34a;color:#fff;padding:9px 11px;border-radius:8px;box-shadow:var(--shadow2);opacity:0;transform:translateY(10px);transition:.25s;font-size:13px}
+  .toast.show{opacity:1;transform:translateY(0)}
+
+  /* Modal edición */
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:3000}
+  .modal-content{background:#fff;width:min(900px,95vw);border-radius:12px;padding:16px;box-shadow:var(--shadow2)}
+  .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .close-x{background:transparent;border:none;font-size:22px;cursor:pointer}
+
+  @media(max-width:768px){.header{grid-template-columns:1fr;text-align:center}.logo{margin:0 auto}}
+</style>
+</head>
+<body>
+
+<div style="position:absolute;top:12px;right:14px;color:#6b7280;font-size:11px">CREADO POR DARIEL A. PEÑA</div>
+
+<!-- HEADER -->
+<section class="header">
+  <div class="logo"><img src="Imagen.png" alt="Logo" style="width:100%;height:100%;object-fit:contain" onerror="this.parentElement.innerHTML='Falta Imagen.png'"></div>
+  <div class="title">
+    <h1>RCA AVERIAS CRITICAS DIAGNOSTICO Y CONFIRMACION -</h1>
+    <div class="subtitle"> CENTRO PROACTIVO DE ANÁLISIS Y FALLAS / GESTIÓN REDUCCIÓN DE AVERÍAS </div>
+  </div>
+  <div class="kpi"><div class="l">Total de Casos</div><div class="v" id="headerKpiValue">0</div></div>
+</section>
+
+<!-- NAV -->
+<nav class="nav">
+  <button id="tabForm" class="active" onclick="showView('form')">Nuevo Registro</button>
+  <button onclick="showView('hist')">Histórico y Análisis</button>
+  <button onclick="showView('dash')">Dashboard Gráfico</button>
+</nav>
+
+<!-- ========== FORMULARIOS ========== -->
+<section id="form" class="wrap view active">
+  <div class="process">
+    <div id="selDiag" class="p-card" onclick="selectProcess('Diagnóstico')"><h3 style="font-weight:400">🔍 Diagnóstico Avería Crítica</h3><p style="color:#6b7280">Registro inicial</p></div>
+    <div id="selConf" class="p-card" onclick="selectProcess('Confirmación')"><h3 style="font-weight:400">✓ Confirmación Avería Crítica</h3><p style="color:#6b7280">Validación y cierre</p></div>
+  </div>
+
+  <!-- DIAGNÓSTICO -->
+  <div id="formDiag" style="display:none">
+    <h2 class="f-title">Formulario de Diagnóstico</h2>
+    <form id="diagnosticoForm">
+      <div class="grid">
+        <div class="fg"><label>Trabajado por</label><select name="trabajadoPor" required><option value="">Seleccione.</option><option>Dariel Peña</option><option>Jorge Hurtado</option><option>Raquel Rodríguez</option><option>Jan Carlos</option></select></div>
+        <div class="fg"><label>Número del Servio</label><input name="numeroServicio" required></div>
+        <div class="fg"><label>Número del caso 3</label><input name="numeroCaso3" required></div>
+        <div class="fg"><label>PRODUCTO</label><select name="producto" required><option value="">Seleccione.</option><option>INTERNET</option><option>IPTV</option><option>DTH</option><option>VOIP</option><option>OTT</option><option>PSTN</option></select></div>
+        <div class="fg"><label>STATUS DEL SERVICIO</label>
+          <select name="statusServicio" required onchange="toggleOtros(this,'statusServicioOtros')">
+            <option value="">Seleccione.</option><option>Activo</option><option>Cancelado</option><option>Suspendido</option><option value="Otros">Otros</option>
+          </select>
+          <input name="statusServicioOtros" placeholder="Especifique" style="display:none;margin-top:8px">
+        </div>
+        <div class="fg"><label>DISTRITO</label><select name="distrito" required><option value="">Seleccione.</option><option>METRO 1</option><option>METRO 2</option><option>METRO 3</option><option>ESTE</option><option>NORTE 1</option><option>NORTE 2</option><option>SUR</option></select></div>
+
+        <!-- CAMBIO: buscador + select de Síntoma (Diagnóstico) -->
+        <div class="fg" style="grid-column:1/-1">
+          <label>SÍNTOMA</label>
+          <input id="sintomaFilterDiag" placeholder="Buscar síntoma… (filtra la lista)"/>
+          <select name="sintoma" id="sintomaSelectDiag" required></select>
+        </div>
+
+        <div class="fg"><label>TECNOLOGIA</label><select name="tecnologia" required><option value="">Seleccione.</option><option>FIBRA</option><option>COBRE</option><option>SATELITAL</option></select></div>
+        <div class="fg"><label>PARÁMETROS DE LÍNEA</label><select name="parametrosLinea" required><option value="">Seleccione.</option><option>Correctos</option><option>Incorrectos</option></select></div>
+        <div class="fg"><label>"Enviado a distrito"</label><select name="enviadoADistrito" required><option value="">Seleccione.</option><option>SI</option><option>NO</option></select></div>
+        <div class="fg"><label>Cerrado interno</label><select name="cerradoInterno" required><option value="">Seleccione.</option><option>SI</option><option>NO</option></select></div>
+
+        <div class="fg"><label>CAUSA DE LA AVERIA (Cierre interno)</label><textarea name="causaAveriaCierreInterno"></textarea></div>
+        <div class="fg"><label>Síntoma de Cierre interno (si aplica)</label><textarea name="sintomaCierreInterno"></textarea></div>
+        <div class="fg"><label>Solución del Cierre interno (si aplica)</label><textarea name="solucionCierreInterno"></textarea></div>
+
+        <div class="fg"><label>¿Ameritaban ser críticos?</label><select name="ameritabanCriticos" required><option value="">Seleccione.</option><option>SI</option><option>NO</option></select></div>
+        <div class="fg"><label>¿Se relacionan los 3 casos?</label><select name="relacionanCasos" required><option value="">Seleccione.</option><option>SI</option><option>NO</option></select></div>
+
+        <!-- No obligatorio -->
+        <div class="fg"><label>Satisfacción del cliente en la reparación del técnico?</label><select name="satisfaccionTecnico"><option value="">Seleccione.</option><option>POSITIVA</option><option>NEGATIVA</option></select></div>
+        <div class="fg"><label>¿Satisfacción del cliente en la reparación del CPAF? (si aplica)</label><select name="satisfaccionCPAF"><option value="">Seleccione.</option><option>POSITIVA</option><option>NEGATIVA</option></select></div>
+
+        <div class="fg" style="grid-column:1/-1"><label>Respuesta Tecnica completa</label><textarea name="respuestaTecnicaCompleta"></textarea></div>
+
+        <div class="fg" style="grid-column:1/-1">
+          <label>Herramientas para solución (multi)</label>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px;margin-top:6px">
+            <label><input type="checkbox" name="herramientas[]" value="KUNAI"> KUNAI</label>
+            <label><input type="checkbox" name="herramientas[]" value="SACS"> SACS</label>
+            <label><input type="checkbox" name="herramientas[]" value="NMIS"> NMIS</label>
+            <label><input type="checkbox" name="herramientas[]" value="NETCRACKET"> NETCRACKET</label>
+            <label><input type="checkbox" name="herramientas[]" value="SISTEMA DE PUERTOS"> SISTEMA DE PUERTOS</label>
+            <label><input type="checkbox" name="herramientas[]" value="ORION"> ORION</label>
+            <label><input type="checkbox" name="herramientas[]" value="SMART WIFI"> SMART WIFI</label>
+            <label><input type="checkbox" name="herramientas[]" value="NCE-FAN"> NCE-FAN</label>
+            <label><input type="checkbox" name="herramientas[]" value="OTROS" onchange="toggleOtrosHerr(this)"> OTROS</label>
+          </div>
+          <input type="text" name="herramientasOtros" placeholder="Especifique OTROS" style="display:none;margin-top:8px">
+        </div>
+
+        <div class="fg" style="grid-column:1/-1"><label>Comentario</label><textarea name="comentario"></textarea></div>
+      </div>
+      <div class="actions">
+        <button class="btn ok" type="submit">Guardar Diagnóstico</button>
+        <button class="btn" type="button" onclick="resetForms()">Limpiar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- CONFIRMACIÓN -->
+  <div id="formConf" style="display:none">
+    <h2 class="f-title">Formulario de Confirmación</h2>
+    <form id="confirmacionForm">
+      <div class="grid">
+        <div class="fg"><label>Trabajado por</label><select name="trabajadoPor" required><option value="">Seleccione.</option><option>Dariel Peña</option><option>Jorge Hurtado</option><option>Raquel Rodríguez</option><option>Jan Carlos</option></select></div>
+        <div class="fg"><label>Número de Servicio</label><input name="numeroServicio" required></div>
+        <div class="fg"><label>Número de Caso 3</label><input name="numeroCaso3" required></div>
+        <div class="fg"><label>Status</label>
+          <select name="status" required onchange="toggleOtros(this,'statusConfOtros')">
+            <option value="">Seleccione.</option><option>Activo</option><option>Cancelado</option><option>Suspendido</option><option value="Otros">Otros</option>
+          </select>
+          <input name="statusConfOtros" placeholder="Especifique" style="display:none;margin-top:8px">
+        </div>
+        <div class="fg"><label>Producto</label><select name="producto" required><option value="">Seleccione.</option><option>INTERNET</option><option>IPTV</option><option>DTH</option><option>VOIP</option><option>OTT</option><option>PSTN</option></select></div>
+        <div class="fg"><label>Tecnología</label><select name="tecnologia" required><option value="">Seleccione.</option><option>FIBRA</option><option>COBRE</option><option>SATELITAL</option></select></div>
+        <div class="fg"><label>Distrito</label><select name="distrito" required><option value="">Seleccione.</option><option>METRO 1</option><option>METRO 2</option><option>METRO 3</option><option>ESTE</option><option>NORTE 1</option><option>NORTE 2</option><option>SUR</option></select></div>
+
+        <!-- CAMBIO: buscador + select de Síntoma (Confirmación) -->
+        <div class="fg" style="grid-column:1/-1">
+          <label>Síntoma</label>
+          <input id="sintomaFilterConf" placeholder="Buscar síntoma… (filtra la lista)"/>
+          <select name="sintoma" id="sintomaSelectConf" required></select>
+        </div>
+
+        <div class="fg"><label>CAUSA DE LA AVERIA</label><textarea name="causaAveria"></textarea></div>
+        <div class="fg"><label>ACCION TECNICA REALIZADA</label><textarea name="accionTecnicaRealizada"></textarea></div>
+        <div class="fg"><label>Respuesta técnica completa</label><textarea name="respuestaTecnicaCompleta"></textarea></div>
+        <div class="fg"><label>Conversación con cliente</label><select name="conversacionCliente" onchange="toggleOtros(this,'convClienteOtros')"><option value="">Seleccione.</option><option>CONFIRMADO, AVERÍA SE SOLUCIONÓ</option><option>CONFIRMADO, SIGUE CON AVERÍA</option><option>CERRADO SIN CONFIRMAR</option><option value="Otros">Otros</option></select><input name="convClienteOtros" style="display:none;margin-top:8px" placeholder="Especifique"></div>
+        <div class="fg"><label>¿Dónde estuvo la oportunidad?</label><textarea name="oportunidadCaso"></textarea></div>
+        <div class="fg"><label>¿Ameritaban críticos?</label><select name="ameritabanCriticos" required><option value="">Seleccione.</option><option>SI</option><option>NO</option></select></div>
+        <!-- No obligatorio -->
+        <div class="fg"><label>Satisfacción Cliente (Técnico)</label><select name="satisfaccionTecnico"><option value="">Seleccione.</option><option>POSITIVA</option><option>NEGATIVA</option></select></div>
+        <div class="fg"><label>¿Se relacionan los 3 casos?</label><select name="relacionanCasos" required><option value="">Seleccione.</option><option>SI</option><option>NO</option></select></div>
+        <div class="fg"><label>Enviado a distrito</label><select name="enviadoADistrito" required><option value="">Seleccione.</option><option>SI</option><option>NO</option></select></div>
+        <div class="fg" style="grid-column:1/-1"><label>Comentario</label><textarea name="comentario"></textarea></div>
+      </div>
+      <div class="actions">
+        <button class="btn ok" type="submit">Guardar Confirmación</button>
+        <button class="btn" type="button" onclick="resetForms()">Limpiar</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- ========== HISTÓRICO ========== -->
+<section id="hist" class="wrap view">
+  <h2 style="color:var(--primary);text-align:center;margin-bottom:10px;font-weight:400">Histórico de Registros</h2>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:10px">
+    <div class="kpi"><div class="l">Total Casos</div><div id="kpiHistTotal" class="v">0</div></div>
+    <div class="kpi"><div class="l">Diagnóstico</div><div id="kpiHistDiag" class="v">0</div></div>
+    <div class="kpi"><div class="l">Confirmación</div><div id="kpiHistConf" class="v">0</div></div>
+  </div>
+
+  <div class="filters">
+    <h3 style="font-weight:400">Filtros y Acciones</h3>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+      <div class="fg"><label>Tipo</label><select id="filterTipo" onchange="loadHistorico()"><option value="">Todos</option><option>Diagnóstico</option><option>Confirmación</option></select></div>
+      <div class="fg"><label>Desde</label><input type="date" id="filterDesde" onchange="loadHistorico()"></div>
+      <div class="fg"><label>Hasta</label><input type="date" id="filterHasta" onchange="loadHistorico()"></div>
+      <div class="fg"><label>Distrito</label><select id="filterDistrito" onchange="loadHistorico()"><option value="">Todos</option></select></div>
+      <div class="fg"><label>Producto</label><select id="filterProducto" onchange="loadHistorico()"><option value="">Todos</option></select></div>
+      <div class="fg"><label>Trabajado por</label><select id="filterTrabajadoPor" onchange="loadHistorico()"><option value="">Todos</option></select></div>
+      <div class="fg"><label>Buscar “Caso 3”</label><input id="filterCaso3" placeholder="Escribe el número" oninput="loadHistorico()"></div>
+    </div>
+    <div class="actions" style="justify-content:flex-start">
+      <label class="btn warn" for="importDiag">📥 Importar Diagnóstico</label>
+      <input id="importDiag" type="file" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event,'Diagnóstico')"/>
+      <label class="btn ok" for="importConf">📥 Importar Confirmación</label>
+      <input id="importConf" type="file" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event,'Confirmación')"/>
+      <button class="btn acc" onclick="exportToExcelFiltered()">📤 Exportar (filtro actual)</button>
+      <button class="btn acc" onclick="exportByCola('Diagnóstico')">📤 Exportar Diagnóstico</button>
+      <button class="btn acc" onclick="exportByCola('Confirmación')">📤 Exportar Confirmación</button>
+      <button class="btn del" onclick="clearAll()">🗑️ Borrar Todo</button>
+    </div>
+  </div>
+
+  <div class="tbl">
+    <table id="tablaHistorico">
+      <thead><tr><th>Fecha</th><th>Hora</th><th>Tipo</th><th>Trabajado Por</th><th>Caso 3</th><th>Servicio</th><th>Producto</th><th>Distrito</th><th>Acciones</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <p id="emptyHistorico" class="empty" style="display:none">No hay registros disponibles.</p>
+</section>
+
+<!-- ========== DASHBOARD ========== -->
+<section id="dash" class="wrap view">
+  <h2 style="color:var(--primary);text-align:center;margin-bottom:10px;font-weight:400">Dashboard Gráfico</h2>
+
+  <!-- KPI con % -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:10px">
+    <div class="kpi"><div class="l">Total Analizado</div><div id="kpiTotalGraficos" class="v">0</div><div id="kpiTotalPct" style="font-size:12px">100%</div></div>
+    <div class="kpi"><div class="l">Diagnóstico</div><div id="kpiDiagnosticoGraficos" class="v">0</div><div id="kpiDiagnosticoPct" style="font-size:12px">0%</div></div>
+    <div class="kpi"><div class="l">Confirmación</div><div id="kpiConfirmacionGraficos" class="v">0</div><div id="kpiConfirmacionPct" style="font-size:12px">0%</div></div>
+  </div>
+
+  <div class="filters">
+    <h3 style="font-weight:400">Filtros del Dashboard</h3>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+      <div class="fg"><label>Desde</label><input type="date" id="chartFilterFechaDesde" onchange="updateCharts()"></div>
+      <div class="fg"><label>Hasta</label><input type="date" id="chartFilterFechaHasta" onchange="updateCharts()"></div>
+      <div class="fg"><label>Distrito</label><select id="chartFilterDistrito" onchange="updateCharts()"><option value="">Todos</option></select></div>
+      <div class="fg"><label>Producto</label><select id="chartFilterProducto" onchange="updateCharts()"><option value="">Todos</option></select></div>
+      <div class="fg"><label>Tecnología</label><select id="chartFilterTecnologia" onchange="updateCharts()"><option value="">Todos</option></select></div>
+      <div class="fg"><label>Enviado a Distrito</label><select id="chartFilterEnviado" onchange="updateCharts()"><option value="">Todos</option><option>SI</option><option>NO</option></select></div>
+      <div class="fg"><label>Cola</label><select id="chartFilterCola" onchange="updateCharts()"><option value="">Diag + Conf</option><option>Diagnóstico</option><option>Confirmación</option></select></div>
+    </div>
+  </div>
+
+  <!-- Resumen Analítico visual -->
+  <div class="card" style="margin-bottom:8px">
+    <h3 style="text-align:left">Resumen Analítico</h3>
+    <div id="resumenAnalitico" class="ra"></div>
+  </div>
+
+  <!-- Distribución + Donut -->
+  <div class="charts">
+    <div class="card"><h3>Distribución de Casos por Producto</h3><div class="cwrap" id="chartDistribucionColas"></div></div>
+    <div class="card"><h3>Volumen Total de Casos por Cola</h3><div class="cwrap" id="chartDonutColas"></div></div>
+  </div>
+
+  <!-- TOPS -->
+  <div class="charts">
+    <div class="card">
+      <h3>TOP 10 Síntomas (Diag + Conf)</h3>
+      <div class="tbl">
+        <table class="top-table" id="tablaTopSintomas">
+          <thead><tr><th class="idx">#</th><th class="txtl">Síntoma</th><th>Diagnóstico</th><th>Confirmación</th><th>Total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>TOP 10 Causa de la Avería (Confirmación)</h3>
+      <div class="table-filter"><label>Excluir texto:</label><input id="fltCausas" placeholder="ej. PENDIENTE" oninput="updateCharts()"/></div>
+      <div class="tbl">
+        <table class="top-table" id="tablaTopCausas">
+          <thead><tr><th class="idx">#</th><th class="txtl">Causa</th><th>Confirmación</th><th>% de Conf</th><th>% del total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>TOP 10 Acción Técnica Realizada (Confirmación)</h3>
+      <div class="table-filter"><label>Excluir texto:</label><input id="fltAcciones" placeholder="ej. PENDIENTE" oninput="updateCharts()"/></div>
+      <div class="tbl">
+        <table class="top-table" id="tablaTopAcciones">
+          <thead><tr><th class="idx">#</th><th class="txtl">Acción Técnica Realizada</th><th>Confirmación</th><th>% de Conf</th><th>% del total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- NUEVAS TABLAS TEXTO (DIAGNÓSTICO + CONF) -->
+  <div class="card" style="margin-top:8px"><h3 style="text-align:left">Texto Clave — Diagnóstico</h3></div>
+  <div class="charts">
+    <div class="card">
+      <h3>TOP 10 Solución del Cierre Interno (Diagnóstico)</h3>
+      <div class="table-filter"><label>Excluir texto:</label><input id="fltSolucionDiag" placeholder="ej. PENDIENTE" oninput="updateCharts()"/></div>
+      <div class="tbl">
+        <table class="top-table" id="tablaTopSolucionDiag">
+          <thead><tr><th class="idx">#</th><th class="txtl">Solución del Cierre Interno</th><th>Diagnóstico</th><th>% de Diag</th><th>% del total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>TOP 10 Respuesta Técnica Completa (Diagnóstico)</h3>
+      <div class="table-filter"><label>Excluir texto:</label><input id="fltRespDiag" placeholder="ej. PENDIENTE" oninput="updateCharts()"/></div>
+      <div class="tbl">
+        <table class="top-table" id="tablaTopRespDiag">
+          <thead><tr><th class="idx">#</th><th class="txtl">Respuesta Técnica (Diag)</th><th>Diagnóstico</th><th>% de Diag</th><th>% del total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:8px"><h3 style="text-align:left">Texto Clave — Confirmación</h3></div>
+  <div class="charts">
+    <div class="card">
+      <h3>TOP 10 Respuesta Técnica Completa (Confirmación)</h3>
+      <div class="table-filter"><label>Excluir texto:</label><input id="fltRespConf" placeholder="ej. PENDIENTE" oninput="updateCharts()"/></div>
+      <div class="tbl">
+        <table class="top-table" id="tablaTopRespConf">
+          <thead><tr><th class="idx">#</th><th class="txtl">Respuesta Técnica (Conf)</th><th>Confirmación</th><th>% de Conf</th><th>% del total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección DIAGNÓSTICO -->
+  <div class="card" style="margin-top:8px"><h3 style="text-align:left">Sección Diagnóstico</h3></div>
+  <div class="charts">
+    <div class="card"><h3>Diagnóstico — Casos por Producto</h3><div class="cwrap" id="diag_chartCasosPorProducto"></div></div>
+    <div class="card"><h3>Diagnóstico — ¿Ameritaban Críticos?</h3><div class="cwrap" id="diag_chartAmeritaban"></div></div>
+    <div class="card"><h3>Diagnóstico — Enviado a Distrito (SI/NO)</h3><div class="cwrap" id="diag_chartEnviadoADistrito"></div></div>
+    <div class="card"><h3>Diagnóstico — ¿Se Relacionan los 3 Casos?</h3><div class="cwrap" id="diag_chartRelacionan"></div></div>
+    <div class="card"><h3>Diagnóstico — Casos por Distrito</h3><div class="cwrap" id="diag_chartCasosPorDistrito"></div></div>
+    <div class="card"><h3>Diagnóstico — Casos por Tecnología</h3><div class="cwrap" id="diag_chartCasosPorTecnologia"></div></div>
+  </div>
+
+  <!-- Sección CONFIRMACIÓN -->
+  <div class="card" style="margin-top:8px"><h3 style="text-align:left">Sección Confirmación</h3></div>
+  <div class="charts">
+    <div class="card"><h3>Confirmación — Casos por Producto</h3><div class="cwrap" id="conf_chartCasosPorProducto"></div></div>
+    <div class="card"><h3>Confirmación — ¿Ameritaban Críticos?</h3><div class="cwrap" id="conf_chartAmeritaban"></div></div>
+    <div class="card"><h3>Confirmación — Enviado a Distrito (SI/NO)</h3><div class="cwrap" id="conf_chartEnviadoADistrito"></div></div>
+    <div class="card"><h3>Confirmación — ¿Se Relacionan los 3 Casos?</h3><div class="cwrap" id="conf_chartRelacionan"></div></div>
+    <div class="card"><h3>Confirmación — Casos por Distrito</h3><div class="cwrap" id="conf_chartCasosPorDistrito"></div></div>
+    <div class="card"><h3>Confirmación — Casos por Tecnología</h3><div class="cwrap" id="conf_chartCasosPorTecnologia"></div></div>
+  </div>
+
+  <p id="emptyGraficos" class="empty" style="display:none">No hay datos para mostrar</p>
+</section>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<!-- Modal edición -->
+<div class="modal" id="editModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-weight:400">Editar Registro</h3>
+      <button class="close-x" onclick="closeEditModal()">×</button>
+    </div>
+    <div id="editFormContainer"></div>
+  </div>
+</div>
+
+<script>
+/* ===== Catálogo de Síntomas (único y ordenado) ===== */
+const SINTOMAS = Array.from(new Set([
+"NO PUEDO ESCUCHAR/NO ME ESCUCHAN",
+"FALLA IMAGEN",
+"MODEM/ONT-NO SINCRONIZADO",
+"STB NO ENCIENDE",
+"NO ME DA TONO",
+"CONTROL REMOTO DESCONFIGURADO",
+"CABLE EN EL SUELO O CORTADO",
+"RUIDO/CRUCE/SE CORTAN LLAMADAS",
+"NO RECIBE/NO SALEN LLAMADAS",
+"CABLE EN SUELO O CORTADO",
+"INTERMITENCIA",
+"MODEM/ONT-INTERMITENCIA WIFI",
+"LENTITUD-BIEN CONFIGURADO",
+"NO NAVEGACIÓN/CON IP",
+"MINIHEADEND DTH",
+"NO RECIBE LLAMADAS",
+"TODOS LOS CANALES SIN SENAL",
+"NO NAVEGACION-NO IP",
+"MODEM/ONT-NO NAVEGA WIFI",
+"NO SENAL-CON IP DE VIDEO",
+"FALLA DE VIDEO",
+"STB CARGANDO",
+"ALGUNOS CANALES SIN SENAL",
+"MODEM / ONT AVERIADO",
+"SMART CARD NO VINCULADO",
+"MENSAJE DE SUSPENSION",
+"TODOS LOS CANALES SIN SEÑAL",
+"LENTITUD-MAL CONFIGURADO",
+"STB AVERIADO",
+"EQUIPO MESH-NO CONECTA O NO NAVEGA",
+"FALLA STB FISICO O DE ACTUALIZACION",
+"NO NAVEGA/INTERMITENCIA REPETIDOR WIFI",
+"INCONVENIENTE CONTENIDO",
+"STB  SE VISUALIZA, NO SE ESCUCHA",
+"EXTENSIONES",
+"CALLER ID",
+"PARÁBOLA MOVIDA/DESPRENDIDA",
+"STB O TV DESCONFIGURADO",
+"NO RECIBE LLAMADAS NUMEROS ESPECIFICOS",
+"CONFIGURACION PERFIL",
+"NO LE HAN RECONECTADO",
+"STB SE ESCUCHA, NO SE VISUALIZA",
+"NO SALEN LLAMADAS LDN",
+"FALLA EN CANAL ESPECÍFICO",
+"STB NO CONECTADO A INTERNET",
+"DESVÍO LLAMADA",
+"NO SENAL-SIN IP DE VIDEO",
+"STB-PIXELACION O FRISADO",
+"EQUIPO MESH-INTERMITENCIA",
+"SMART CARD EXPIRADO",
+"ERROR GRABACION",
+"VINCULACION DISPOSITIVO",
+"NO SEÑAL-CANAL ESPECÍFICO",
+"FALLA DE AUDIO",
+"STB NO SE ESCUCHA, SE VISUALIZA",
+"INTERMITENCIA DEL SERVICIO",
+"PIN ACCESO 0 Y 1",
+"INTERFERENCIA",
+"IMAGEN PIXCELADA",
+"SMART CARD REMOVIDO",
+"T1 SIN SERVICIO",
+"PIN PROTECCION",
+"SMART CARD INVALIDO",
+"NO SALEN LLAMADAS LDI",
+"CAMBIO DE CORREO",
+"SMART CARD MUDO",
+"LLAMADA EN CONFERENCIA",
+"MODEM /ONT AVERIADO",
+"TELEFONO PRIVADO",
+"REPETIDOR WIFI NO ENCIENDE",
+"LENTITUD",
+"EQUIPO MESH-LENTITUD",
+"EQUIPO MESH-AVERIADO/NO FUNCIONA",
+"CANAL DE SUSCRIPCIÓN/ADD-ONS OTROS",
+"EQUIPO MESH-CONFIGURACION AVANZADA",
+"EQUIPO MESH-BAJA COBERTURA",
+"STB-DVR - NO GRABA",
+"CORREO ERRONEO",
+"NO SALEN LLAMADAS",
+"CABLE DE RED AVERIADO",
+"DOBLE LÍNEA",
+"LE ESTAN SALIENDO LLAMADAS A CELULARES",
+"LE ESTÁN SALIENDO LLAMADAS A CELULARES",
+"FALLA CANALES PREMIUN",
+"GRABACION NO FUNCIONA",
+"BUZON DE MENSAJE-SALE MENSAJE ERRONEO",
+"SALEN LLAMADAS LD FUERA DE PLAN",
+"EQUIPO MESH-CAMBIO CREDENCIALES",
+"PAGO RECHAZADO/PERFIL ENGANCHADO",
+"EQUIPO MESH-ERROR DE VINCULACION",
+"MI NEGOCIO TOTAL INCONVENIENTES VOZ",
+"BUZON DE MENSAJE-PROB.LLAMADA DESPERTAD",
+"STB SOLICITA INICIO DE SESION",
+"SMART CARD NUNCA VINCULADO",
+"CONTROL REMOTO AVERIADO",
+"RETORNO LLAMADAS",
+"VISITA TÉCNICA DIAL-UP",
+"NO INFORMADO",
+"STB PIDE CONTRATAR PLAN/PAQUETE",
+"NO HAY ACCESO A SMART CARD",
+"BUZON DE MENSAJE-TIENE MENSAJE, SIN TONO",
+"DIAGNÓSTICO",
+"BUZON DE MENSAJE-CLAVE NO FUNCIONA",
+"PROBLEMA PELÍCULA",
+"NO LE SALEN LLAMADAS USA/PR",
+"BUZÓN MENSAJES",
+"MARCADO ABREVIADO",
+"ERROR PAUSA EN VIVO",
+"PROACTIVO - CORRECCION PARAMETROS LINEA",
+"VINCULACION DE STB"
+])).sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+
+function renderSintomas(selectId, filterText=''){
+  const sel=document.getElementById(selectId);
+  if(!sel) return;
+  const cur = sel.value;
+  const ft=(filterText||'').toLowerCase();
+  const items = SINTOMAS.filter(s=>s.toLowerCase().includes(ft));
+  sel.innerHTML = '<option value="">Seleccione.</option>' + items.map(s=>`<option>${s}</option>`).join('');
+  if(items.includes(cur)) sel.value = cur;
+}
+
+/* ===== Estado ===== */
+const STORAGE_KEY='rca_registros_apex_v5_session';
+let registros=[], activeCharts=[];
+const palette=['#1E88E5','#E53935','#8E24AA','#43A047','#FB8C00','#00ACC1','#3949AB','#6D4C41','#FDD835','#7CB342','#D81B60','#5E35B1','#00897B','#F4511E','#2E7D32'];
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1700)}
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(registros))}
+function load(){const d=localStorage.getItem(STORAGE_KEY); if(d) registros=JSON.parse(d)}
+function fmtPct(n,base){const v=base? (n/base*100):0; return (Math.round(v*10)/10).toFixed(1)+'%'}
+function uniq(arr){return [...new Set(arr.filter(Boolean))]}
+function countBy(list,field,fn=()=>true){return list.filter(fn).reduce((a,c)=>{const k=(c[field]||'').toString().trim(); if(!k) return a; a[k]=(a[k]||0)+1; return a}, {})}
+function topEntries(obj,limit=10){return Object.entries(obj).filter(([k,v])=>k && v>0).sort((a,b)=>b[1]-a[1]).slice(0,limit)}
+function toggleOtros(sel,target){const t=document.querySelector(`input[name="${target}"]`); if(!t) return; const on=sel.value==='Otros'; t.style.display=on?'block':'none'; t.required=on}
+function toggleOtrosHerr(cb){const i=document.querySelector('input[name="herramientasOtros"]'); if(!i) return; i.style.display=cb.checked?'block':'none'; if(!cb.checked) i.value=''}
+
+/* ===== Navegación ===== */
+function showView(id){
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  if(id==='form') document.getElementById('tabForm').classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('headerKpiValue').textContent=registros.length.toLocaleString();
+  if(id==='hist') { populateFilters(); loadHistorico(); }
+  if(id==='dash') { populateFilters(); updateCharts(); }
+}
+function selectProcess(t){document.getElementById('selDiag').classList.toggle('selected',t==='Diagnóstico');document.getElementById('selConf').classList.toggle('selected',t==='Confirmación');document.getElementById('formDiag').style.display=t==='Diagnóstico'?'block':'none';document.getElementById('formConf').style.display=t==='Confirmación'?'block':'none'}
+function resetForms(){document.querySelectorAll('form').forEach(f=>f.reset())}
+
+/* ===== Formularios (submit) ===== */
+function buildRecord(e,tipo){
+  e.preventDefault(); const f=e.target, fd=new FormData(f);
+  const rec={id:String(Date.now())+Math.random().toString(36).slice(2),fecha:new Date().toISOString().split('T')[0],hora:new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),tipo};
+  for(const [k,v] of fd.entries()){
+    if(k.includes('Otros') && !k.startsWith('status')) continue;
+    const el=f.elements[k];
+    if(k==='herramientas[]') continue;
+    if(el && el.type==='checkbox'){rec[k]=rec[k]?`${rec[k]}, ${v}`:v}else{rec[k]=(v==='Otros' && !k.startsWith('status'))?(fd.get(`${k}Otros`)||v):v}
+  }
+  const hs=[...f.querySelectorAll('input[name="herramientas[]"]:checked')].map(x=>x.value);
+  if(hs.includes('OTROS')){
+    const ot=f.querySelector('input[name="herramientasOtros"]')?.value?.trim();
+    if(ot) hs[hs.indexOf('OTROS')]=`OTROS: ${ot}`
+  }
+  if(hs.length) rec.herramientas=hs.join(', ');
+  if(tipo==='Confirmación' && rec.status) rec.statusServicio=rec.status;
+  rec.enviadoADistrito = rec.enviadoADistrito || '';
+  return rec;
+}
+document.getElementById('diagnosticoForm').addEventListener('submit',(e)=>{const r=buildRecord(e,'Diagnóstico');registros.push(r);save();showToast('Diagnóstico guardado');e.target.reset();document.getElementById('headerKpiValue').textContent=registros.length;});
+document.getElementById('confirmacionForm').addEventListener('submit',(e)=>{const r=buildRecord(e,'Confirmación');registros.push(r);save();showToast('Confirmación guardada');e.target.reset();document.getElementById('headerKpiValue').textContent=registros.length;});
+
+/* ===== Import / Export ===== */
+function importExcel(evt,tipo){
+  const file=evt.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const json=XLSX.utils.sheet_to_json(ws,{defval:''});
+    const map={
+      'PRODUCTO REPORTADO':'producto','PRODUCTO':'producto','PRODUCT':'producto','DISTRITOS':'distrito','DISTRITO':'distrito',
+      'SINTOMAS':'sintoma','SINTOMA':'sintoma','CAUSA DE LA AVERIA':'causaAveria','CAUSA DE LA AVERÍA':'causaAveria','CAUSA':'causaAveria',
+      'TRABAJADO POR':'trabajadoPor','TRABAJADO':'trabajadoPor','CASOS':'numeroCaso3',
+      'NÚMERO DE SERVICIO':'numeroServicio','NUMERO DE SERVICIO':'numeroServicio','NUMERO DEL SERVICIO':'numeroServicio',
+      'TECNOLOGIA':'tecnologia','TECNOLOGÍA':'tecnologia','ESTATUS':'statusServicio','STATUS':'status',
+      'FECHA CREACION':'fechaCreacion','FECHA CREACIÓN':'fechaCreacion','FECHA DE ENTRADA':'fechaEntrada',
+      'ENVIADO A DISTRITO (SÍ/NO)':'enviadoADistrito','ENVIADO A DISTRITO':'enviadoADistrito',
+      '¿AMERITABAN SER CRÍTICOS?':'ameritabanCriticos','¿SE RELACIONAN LOS 3 CASOS?':'relacionanCasos',
+      'CONVERSACION CON CLIENTE':'conversacionCliente','CONVERSACIÓN CON CLIENTE':'conversacionCliente',
+      'ACCION TECNICA REALIZADA':'accionTecnicaRealizada','ACCIÓN TÉCNICA REALIZADA':'accionTecnicaRealizada',
+      'RESPUESTA TECNICA COMPLETA':'respuestaTecnicaCompleta','RESPUESTA TÉCNICA COMPLETA':'respuestaTecnicaCompleta',
+      'SOLUCIÓN DEL CIERRE INTERNO (SI APLICA)':'solucionCierreInterno','SOLUCION DEL CIERRE INTERNO (SI APLICA)':'solucionCierreInterno'
+    };
+    const imported=json.map(row=>{
+      const r={id:String(Date.now())+Math.random().toString(36).slice(2),tipo,fecha:new Date().toISOString().split('T')[0],hora:new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'})};
+      Object.keys(row).forEach(k=>{const K=k.toString().toUpperCase().trim();const key=map[K]; if(key) r[key]=row[k]});
+      const d=row['FECHA CREACION']||row['FECHA CREACIÓN']||row['FECHA DE ENTRADA']; if(d){const dt=new Date(d); if(!isNaN(dt)) r.fecha=dt.toISOString().split('T')[0]}
+      if(tipo==='Confirmación' && r.status) r.statusServicio=r.status;
+      r.enviadoADistrito = r.enviadoADistrito || '';
+      return r;
+    });
+    registros=registros.concat(imported); save(); showToast(`${imported.length} registros de ${tipo} importados.`); evt.target.value=null;
+    populateFilters();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function exportArrayToXLSX(arr, name){
+  const ws=XLSX.utils.json_to_sheet(arr); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'RCA');
+  XLSX.writeFile(wb,`${name}.xlsx`);
+}
+
+function exportToExcelFiltered(){
+  const t=document.getElementById('filterTipo').value,
+        d=document.getElementById('filterDesde').value,
+        h=document.getElementById('filterHasta').value,
+        di=document.getElementById('filterDistrito').value,
+        p=document.getElementById('filterProducto').value,
+        tr=document.getElementById('filterTrabajadoPor').value,
+        c3=(document.getElementById('filterCaso3').value||'').trim().toLowerCase();
+
+  let list=registros.slice();
+  if(t) list=list.filter(r=>r.tipo===t); if(di) list=list.filter(r=>r.distrito===di); if(p) list=list.filter(r=>r.producto===p); if(tr) list=list.filter(r=>r.trabajadoPor===tr);
+  if(d) list=list.filter(r=>r.fecha>=d); if(h) list=list.filter(r=>r.fecha<=h); if(c3) list=list.filter(r=>(r.numeroCaso3||'').toString().toLowerCase().includes(c3));
+
+  if(!list.length){alert('No hay datos filtrados para exportar.');return}
+  const copy=list.map(r=>{const c={...r}; delete c.id; return c});
+  const today=new Date().toISOString().slice(0,10);
+  exportArrayToXLSX(copy, `RCA_Export_Filtro_${today}`);
+}
+
+function exportByCola(tipo){
+  const list=registros.filter(r=>r.tipo===tipo);
+  if(!list.length){alert(`No hay datos de ${tipo} para exportar.`);return}
+  const copy=list.map(r=>{const c={...r}; delete c.id; return c});
+  const today=new Date().toISOString().slice(0,10);
+  exportArrayToXLSX(copy, `RCA_Export_${tipo}_${today}`);
+}
+
+function clearAll(){if(!confirm('¿Borrar todo?')) return; registros=[]; save(); showToast('Datos borrados'); populateFilters(); loadHistorico(); updateCharts();}
+
+/* ===== Modal edición ===== */
+function inputRow(name,label,value='',type='text'){ return `<div class="fg"><label>${label}</label><input name="${name}" value="${(value??'').toString().replace(/"/g,'&quot;')}" type="${type}"/></div>`;}
+function selectRow(name,label,opts,value=''){ const options = ['','SI','NO'].includes(opts?.[0]) ? opts : ['','SI','NO']; return `<div class="fg"><label>${label}</label><select name="${name}">${options.map(o=>`<option ${String(value)===String(o)?'selected':''}>${o}</option>`).join('')}</select></div>`;}
+function textareaRow(name,label,value=''){ return `<div class="fg"><label>${label}</label><textarea name="${name}">${(value??'')}</textarea></div>`;}
+function toolsRow(value=''){
+  const vals=(value||'').split(',').map(s=>s.trim());
+  const isOt=vals.some(v=>v.startsWith('OTROS'));
+  const otrosText=isOt?(vals.find(v=>v.startsWith('OTROS'))||'').replace(/^OTROS:\s*/,''):''; const checked=(k)=> vals.includes(k)?'checked':'';
+  return `
+    <div class="fg" style="grid-column:1/-1">
+      <label>Herramientas (multi)</label>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px;margin-top:6px">
+        ${['KUNAI','SACS','NMIS','NETCRACKET','SISTEMA DE PUERTOS','ORION','SMART WIFI','NCE-FAN'].map(k=>`<label><input type="checkbox" name="herramientas[]" value="${k}" ${checked(k)}> ${k}</label>`).join('')}
+        <label><input type="checkbox" name="herramientas[]" value="OTROS" ${isOt?'checked':''} onchange="toggleOtrosHerramientasEdit(this)"> OTROS</label>
+      </div>
+      <input type="text" name="herramientasOtros" placeholder="Especifique OTROS" style="margin-top:8px; ${isOt?'':'display:none'}" value="${otrosText}">
+    </div>`;
+}
+function toggleOtrosHerramientasEdit(cb){
+  const input=cb.closest('.fg').querySelector('input[name="herramientasOtros"]');
+  if(!input) return; input.style.display=cb.checked?'block':'none'; if(!cb.checked) input.value='';
+}
+function openEditModal(rec){
+  const m=document.getElementById('editModal');
+  const cont=document.getElementById('editFormContainer');
+  if(rec.tipo==='Diagnóstico'){
+    cont.innerHTML=`<form id="editForm" onsubmit="submitEdit('${rec.id}','Diagnóstico');return false;">
+      <div class="grid">
+        ${inputRow('trabajadoPor','Trabajado por',rec.trabajadoPor)}
+        ${inputRow('numeroServicio','Número del Servio',rec.numeroServicio)}
+        ${inputRow('numeroCaso3','Número del caso 3',rec.numeroCaso3)}
+        ${inputRow('producto','PRODUCTO',rec.producto)}
+        ${inputRow('statusServicio','STATUS DEL SERVICIO',rec.statusServicio)}
+        ${inputRow('distrito','DISTRITO',rec.distrito)}
+        ${inputRow('sintoma','SINTOMA',rec.sintoma)}
+        ${inputRow('tecnologia','TECNOLOGIA',rec.tecnologia)}
+        ${inputRow('parametrosLinea','PARÁMETROS DE LÍNEA',rec.parametrosLinea)}
+        ${inputRow('enviadoADistrito','"Enviado a distrito"',rec.enviadoADistrito)}
+        ${inputRow('cerradoInterno','Cerrado interno',rec.cerradoInterno)}
+        ${textareaRow('causaAveriaCierreInterno','CAUSA DE LA AVERIA (Cierre interno)',rec.causaAveriaCierreInterno)}
+        ${textareaRow('sintomaCierreInterno','Síntoma de Cierre interno (si aplica)',rec.sintomaCierreInterno)}
+        ${textareaRow('solucionCierreInterno','Solución del Cierre interno (si aplica)',rec.solucionCierreInterno)}
+        ${inputRow('ameritabanCriticos','¿Ameritaban ser críticos?',rec.ameritabanCriticos)}
+        ${inputRow('relacionanCasos','¿Se relacionan los 3 casos?',rec.relacionanCasos)}
+        ${textareaRow('respuestaTecnicaCompleta','Respuesta Tecnica completa',rec.respuestaTecnicaCompleta)}
+        ${inputRow('satisfaccionTecnico','Satisfacción del cliente en la reparación del técnico?',rec.satisfaccionTecnico)}
+        ${inputRow('satisfaccionCPAF','¿Satisfacción del cliente en la reparación del CPAF? (si aplica)',rec.satisfaccionCPAF)}
+        ${toolsRow(rec.herramientas)}
+        ${textareaRow('comentario','Comentario',rec.comentario)}
+      </div>
+      <div class="actions" style="margin-top:10px">
+        <button class="btn ok" type="submit">Guardar Cambios</button>
+        <button class="btn del" type="button" onclick="closeEditModal()">Cancelar</button>
+      </div>
+    </form>`;
+  }else{
+    cont.innerHTML=`<form id="editForm" onsubmit="submitEdit('${rec.id}','Confirmación');return false;">
+      <div class="grid">
+        ${inputRow('trabajadoPor','Trabajado por',rec.trabajadoPor)}
+        ${inputRow('numeroServicio','Número de Servicio',rec.numeroServicio)}
+        ${inputRow('numeroCaso3','Número de Caso 3',rec.numeroCaso3)}
+        ${inputRow('status','Status',rec.status)}
+        ${inputRow('producto','Producto',rec.producto)}
+        ${inputRow('tecnologia','Tecnología',rec.tecnologia)}
+        ${inputRow('distrito','Distrito',rec.distrito)}
+        ${inputRow('sintoma','Síntoma',rec.sintoma)}
+        ${textareaRow('causaAveria','Causa de la Avería',rec.causaAveria)}
+        ${textareaRow('accionTecnicaRealizada','Acción técnica realizada',rec.accionTecnicaRealizada)}
+        ${textareaRow('respuestaTecnicaCompleta','Respuesta técnica completa',rec.respuestaTecnicaCompleta)}
+        ${inputRow('conversacionCliente','Conversación con cliente',rec.conversacionCliente)}
+        ${textareaRow('oportunidadCaso','¿Dónde estuvo la oportunidad?',rec.oportunidadCaso)}
+        ${inputRow('ameritabanCriticos','¿Ameritaban críticos?',rec.ameritabanCriticos)}
+        ${inputRow('satisfaccionTecnico','Satisfacción Cliente (Técnico)',rec.satisfaccionTecnico)}
+        ${inputRow('relacionanCasos','¿Se relacionan los 3 casos?',rec.relacionanCasos)}
+        ${inputRow('enviadoADistrito','Enviado a distrito',rec.enviadoADistrito)}
+        ${textareaRow('comentario','Comentario',rec.comentario)}
+      </div>
+      <div class="actions" style="margin-top:10px">
+        <button class="btn ok" type="submit">Guardar Cambios</button>
+        <button class="btn del" type="button" onclick="closeEditModal()">Cancelar</button>
+      </div>
+    </form>`;
+  }
+  m.style.display='flex';
+}
+function closeEditModal(){document.getElementById('editModal').style.display='none'}
+function submitEdit(id,tipo){
+  const f=document.getElementById('editForm'); const fd=new FormData(f);
+  const r=registros.find(x=>String(x.id)===String(id)); if(!r) return;
+  if (tipo==='Diagnóstico'){
+    const tools=[...f.querySelectorAll('input[name="herramientas[]"]:checked')].map(x=>x.value);
+    let toolsOtros = f.querySelector('input[name="herramientasOtros"]')?.value?.trim();
+    if (tools.includes('OTROS')){
+      toolsOtros = toolsOtros ? `OTROS: ${toolsOtros}` : 'OTROS';
+      tools[tools.indexOf('OTROS')] = toolsOtros;
+    }
+    r.herramientas = tools.join(', ');
+  }
+  fd.forEach((v,k)=>{ if(k!=='herramientas[]' && k!=='herramientasOtros') r[k]=v; });
+  save(); closeEditModal(); showToast('Registro actualizado'); loadHistorico(); updateCharts();
+}
+
+/* ===== Histórico ===== */
+function loadHistorico(){
+  const tbody=document.querySelector('#tablaHistorico tbody'); const empty=document.getElementById('emptyHistorico');
+  const t=document.getElementById('filterTipo').value,d=document.getElementById('filterDesde').value,h=document.getElementById('filterHasta').value,di=document.getElementById('filterDistrito').value,p=document.getElementById('filterProducto').value,tr=document.getElementById('filterTrabajadoPor').value,c3=(document.getElementById('filterCaso3').value||'').trim().toLowerCase();
+  let list=registros.slice();
+  if(t) list=list.filter(r=>r.tipo===t); if(di) list=list.filter(r=>r.distrito===di); if(p) list=list.filter(r=>r.producto===p); if(tr) list=list.filter(r=>r.trabajadoPor===tr);
+  if(d) list=list.filter(r=>r.fecha>=d); if(h) list=list.filter(r=>r.fecha<=h); if(c3) list=list.filter(r=>(r.numeroCaso3||'').toString().toLowerCase().includes(c3));
+  tbody.innerHTML=''; empty.style.display = list.length? 'none':'block';
+  let dct=0,cft=0;
+  list.sort((a,b)=>b.id.localeCompare(a.id)).forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r.fecha||''}</td><td>${r.hora||''}</td><td>${r.tipo||''}</td><td>${r.trabajadoPor||''}</td><td>${r.numeroCaso3||''}</td><td>${r.numeroServicio||''}</td><td>${r.producto||''}</td><td>${r.distrito||''}</td>
+    <td>
+      <button class="btn acc" onclick="openEditModal(registros.find(x=>x.id==='${r.id}'))">Editar</button>
+      <button class="btn" style="background:#6b7280" onclick="alert(JSON.stringify(registros.find(x=>x.id==='${r.id}'), null, 2))">Ver</button>
+      <button class="btn del" onclick="registros=registros.filter(x=>x.id!=='${r.id}'); save(); loadHistorico(); showToast('Registro eliminado')">Eliminar</button>
+    </td>`;
+    tbody.appendChild(tr); if(r.tipo==='Diagnóstico') dct++; else cft++;
+  });
+  document.getElementById('kpiHistTotal').textContent=list.length; document.getElementById('kpiHistDiag').textContent=dct; document.getElementById('kpiHistConf').textContent=cft;
+  document.getElementById('headerKpiValue').textContent=registros.length.toLocaleString();
+}
+
+/* ===== Dashboard ===== */
+function destroyCharts(){activeCharts.forEach(c=>{try{c.destroy()}catch{}}); activeCharts=[]}
+
+function renderResumen(data,diag,conf){
+  const total=data.length, nd=diag.length, nc=conf.length;
+  const prodDiag=countBy(diag,'producto'), prodConf=countBy(conf,'producto');
+  const distDiag=countBy(diag,'distrito'), distConf=countBy(conf,'distrito');
+  const sinDiag=countBy(diag,'sintoma'), sinConf=countBy(conf,'sintoma');
+  const envAll=countBy(data,'enviadoADistrito'), envDiag=countBy(diag,'enviadoADistrito'), envConf=countBy(conf,'enviadoADistrito');
+  const critDiag=countBy(diag,'ameritabanCriticos'), critConf=countBy(conf,'ameritabanCriticos');
+  const relConf=countBy(conf,'relacionanCasos');
+  const accConf=countBy(conf,'accionTecnicaRealizada');
+
+  const top = (o)=>{const arr=Object.entries(o).sort((a,b)=>b[1]-a[1]); return {k:arr[0]?.[0]||'—',v:arr[0]?.[1]||0}};
+  const tPD=top(prodDiag), tDD=top(distDiag), tSD=top(sinDiag);
+  const tPC=top(prodConf), tDC=top(distConf), tSC=top(sinConf);
+
+  const envAllSI=envAll['SI']||0, envDiagSI=envDiag['SI']||0, envConfSI=envConf['SI']||0;
+  const accTop=top(accConf);
+
+  const head=`
+    <div class="ra-head">
+      <div class="ra-kpi"><div class="h">Total Analizado</div><div class="n">${total.toLocaleString()}</div><div class="s">100%</div></div>
+      <div class="ra-kpi" style="background:linear-gradient(135deg,#0f766e,#115e59)"><div class="h">Diagnóstico</div><div class="n">${nd.toLocaleString()}</div><div class="s">${fmtPct(nd,total)}</div></div>
+      <div class="ra-kpi" style="background:linear-gradient(135deg,#7c3aed,#5b21b6)"><div class="h">Confirmación</div><div class="n">${nc.toLocaleString()}</div><div class="s">${fmtPct(nc,total)}</div></div>
+    </div>`;
+
+  const diagBox=`
+    <div class="ra-box">
+      <div class="ra-title">Diagnóstico — Top drivers</div>
+      <div class="ra-tri">
+        <div class="ra-card">
+          <div class="t">Producto más afectado</div>
+          <div class="v">${tPD.k}</div>
+          <div class="p">${tPD.v} | ${fmtPct(tPD.v,nd)} de Diag · ${fmtPct(tPD.v,total)} total</div>
+        </div>
+        <div class="ra-card">
+          <div class="t">Distrito top</div>
+          <div class="v">${tDD.k}</div>
+          <div class="p">${tDD.v} | ${fmtPct(tDD.v,nd)} · ${fmtPct(tDD.v,total)}</div>
+        </div>
+        <div class="ra-card">
+          <div class="t">Síntoma top</div>
+          <div class="v">${tSD.k}</div>
+          <div class="p">${tSD.v} | ${fmtPct(tSD.v,nd)} · ${fmtPct(tSD.v,total)}</div>
+        </div>
+      </div>
+    </div>`;
+
+  const confBox=`
+    <div class="ra-box">
+      <div class="ra-title">Confirmación — Top drivers</div>
+      <div class="ra-tri">
+        <div class="ra-card">
+          <div class="t">Producto más afectado</div>
+          <div class="v">${tPC.k}</div>
+          <div class="p">${tPC.v} | ${fmtPct(tPC.v,nc)} de Conf · ${fmtPct(tPC.v,total)} total</div>
+        </div>
+        <div class="ra-card">
+          <div class="t">Distrito top</div>
+          <div class="v">${tDC.k}</div>
+          <div class="p">${tDC.v} | ${fmtPct(tDC.v,nc)} · ${fmtPct(tDC.v,total)}</div>
+        </div>
+        <div class="ra-card">
+          <div class="t">Síntoma top</div>
+          <div class="v">${tSC.k}</div>
+          <div class="p">${tSC.v} | ${fmtPct(tSC.v,nc)} · ${fmtPct(tSC.v,total)}</div>
+        </div>
+      </div>
+    </div>`;
+
+  const micro=`
+    <div class="ra-micro">
+      <div class="mini"><div class="t">Enviado a Distrito (SI) — Total</div><div class="v">${envAllSI}</div><div class="p">${fmtPct(envAllSI,total)}</div></div>
+      <div class="mini"><div class="t">Enviado a Distrito (SI) — Diag</div><div class="v">${envDiagSI}</div><div class="p">${fmtPct(envDiagSI,nd)} · ${fmtPct(envDiagSI,total)} total</div></div>
+      <div class="mini"><div class="t">Enviado a Distrito (SI) — Conf</div><div class="v">${envConfSI}</div><div class="p">${fmtPct(envConfSI,nc)} · ${fmtPct(envConfSI,total)} total</div></div>
+      <div class="mini"><div class="t">¿Ameritaban críticos? (Diag)</div><div class="v">SI ${critDiag['SI']||0} / NO ${critDiag['NO']||0}</div><div class="p">SI ${fmtPct(critDiag['SI']||0,nd)} · NO ${fmtPct(critDiag['NO']||0,nd)}</div></div>
+      <div class="mini"><div class="t">¿Ameritaban críticos? (Conf)</div><div class="v">SI ${critConf['SI']||0} / NO ${critConf['NO']||0}</div><div class="p">SI ${fmtPct(critConf['SI']||0,nc)} · NO ${fmtPct(critConf['NO']||0,nc)}</div></div>
+      <div class="mini"><div class="t">¿Se relacionan los 3 casos? (Conf)</div><div class="v">SI ${relConf['SI']||0} / NO ${relConf['NO']||0}</div><div class="p">SI ${fmtPct(relConf['SI']||0,nc)} · NO ${fmtPct(relConf['NO']||0,nc)}</div></div>
+      <div class="mini"><div class="t">Acción técnica TOP (Conf)</div><div class="v">${accTop.k}</div><div class="p">${accTop.v} | ${fmtPct(accTop.v,nc)} conf · ${fmtPct(accTop.v,total)} total</div></div>
+    </div>`;
+
+  document.getElementById('resumenAnalitico').innerHTML=head+diagBox+confBox+micro;
+  return {sinDiag,sinConf};
+}
+
+function bars(el,cats,data,colorIdx,label='Casos'){
+  const ch=new ApexCharts(document.querySelector(el),{
+    series:[{name:label,data}],
+    chart:{type:'bar',height:420},
+    plotOptions:{bar:{columnWidth:'58%',borderRadius:6,dataLabels:{position:'top'}}},
+    dataLabels:{enabled:true, formatter:(v)=>v.toLocaleString()},
+    xaxis:{categories:cats},yaxis:{title:{text:'Volumen'}},
+    colors:[palette[colorIdx%palette.length]],legend:{show:false},tooltip:{y:{formatter:v=>v.toLocaleString()}}
+  }); ch.render(); activeCharts.push(ch);
+}
+function pieSmart(el, lbls, vals, off=0){
+  const colors=lbls.map((_,i)=>palette[(off+i)%palette.length]);
+  const ch=new ApexCharts(document.querySelector(el),{
+    series: vals, labels: lbls, chart:{ type:'pie', height:420 },
+    colors, dataLabels:{ enabled:true }, legend:{ position:'bottom' }
+  }); ch.render(); activeCharts.push(ch);
+}
+
+function textTopRows(list, field, limit, baseDen, excludeText){
+  const ex=(excludeText||'').trim().toLowerCase();
+  const obj=list.reduce((acc,r)=>{
+    const raw=(r[field]||'').toString().trim();
+    if(!raw) return acc;
+    const k=raw.length>140 ? raw.slice(0,140)+'…' : raw;
+    if(ex && k.toLowerCase().includes(ex)) return acc;
+    acc[k]=(acc[k]||0)+1; return acc;
+  },{});
+  const arr=topEntries(obj, limit).map(([k,v])=>[k,v,fmtPct(v,baseDen),fmtPct(v,list.length || 1)]);
+  return arr;
+}
+
+function fillTopTable(tableId, rows){
+  const tb=document.querySelector(`#${tableId} tbody`); tb.innerHTML='';
+  rows.forEach((r,i)=>{const tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}</td><td class="txtl" title="${r[0]}">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>`; tb.appendChild(tr)});
+}
+
+function updateCharts(){
+  destroyCharts();
+  const empty=document.getElementById('emptyGraficos');
+  if(!registros.length){empty.style.display='block'; document.getElementById('kpiTotalGraficos').textContent=0; document.getElementById('kpiDiagnosticoGraficos').textContent=0; document.getElementById('kpiConfirmacionGraficos').textContent=0; document.getElementById('kpiTotalPct').textContent='100%'; document.getElementById('kpiDiagnosticoPct').textContent='0%'; document.getElementById('kpiConfirmacionPct').textContent='0%'; document.getElementById('resumenAnalitico').innerHTML=''; return}
+  empty.style.display='none';
+
+  const fd=document.getElementById('chartFilterFechaDesde').value,
+        fh=document.getElementById('chartFilterFechaHasta').value,
+        di=document.getElementById('chartFilterDistrito').value,
+        pr=document.getElementById('chartFilterProducto').value,
+        te=document.getElementById('chartFilterTecnologia').value,
+        en=document.getElementById('chartFilterEnviado').value,
+        cola=document.getElementById('chartFilterCola').value;
+
+  let data=registros.slice();
+  if(di) data=data.filter(r=>r.distrito===di);
+  if(pr) data=data.filter(r=>r.producto===pr);
+  if(te) data=data.filter(r=>r.tecnologia===te);
+  if(en) data=data.filter(r=>(r.enviadoADistrito||'')===en);
+  if(fd) data=data.filter(r=>r.fecha>=fd);
+  if(fh) data=data.filter(r=>r.fecha<=fh);
+
+  let diag=data.filter(r=>r.tipo==='Diagnóstico');
+  let conf=data.filter(r=>r.tipo==='Confirmación');
+  if(cola==='Diagnóstico'){ conf=[]; data=diag.slice(); }
+  if(cola==='Confirmación'){ diag=[]; data=conf.slice(); }
+
+  const total=data.length, nd=diag.length, nc=conf.length;
+  document.getElementById('kpiTotalGraficos').textContent=total.toLocaleString();
+  document.getElementById('kpiDiagnosticoGraficos').textContent=nd.toLocaleString();
+  document.getElementById('kpiConfirmacionGraficos').textContent=nc.toLocaleString();
+  document.getElementById('kpiTotalPct').textContent='100%';
+  document.getElementById('kpiDiagnosticoPct').textContent=fmtPct(nd,total);
+  document.getElementById('kpiConfirmacionPct').textContent=fmtPct(nc,total);
+
+  // Resumen visual
+  const parts=renderResumen(data,diag,conf);
+
+  // Distribución por producto (líneas)
+  const prods=uniq(data.map(r=>r.producto)).sort();
+  const diagByProd=countBy(diag,'producto'), confByProd=countBy(conf,'producto');
+  const categories=prods.filter(p=>(diagByProd[p]||0)>0 || (confByProd[p]||0)>0);
+  const chartDistrib=new ApexCharts(document.querySelector('#chartDistribucionColas'),{
+    series:[{name:'Diagnóstico',data:categories.map(p=>diagByProd[p]||0)},{name:'Confirmación',data:categories.map(p=>confByProd[p]||0)}],
+    chart:{type:'line',height:420,toolbar:{show:true},zoom:{enabled:false}},
+    xaxis:{categories,title:{text:'Producto'}},yaxis:{title:{text:'Volumen de Casos'}},
+    colors:[palette[0],palette[1]],stroke:{curve:'smooth',width:4},markers:{size:4},legend:{position:'top'}
+  }); chartDistrib.render(); activeCharts.push(chartDistrib);
+
+  // Donut por cola
+  const byTipo=countBy(data,'tipo');
+  (function(){
+    const labels=Object.keys(byTipo), values=Object.values(byTipo);
+    const colors=labels.map((_,i)=>palette[(i+2)%palette.length]);
+    const chart=new ApexCharts(document.querySelector('#chartDonutColas'),{
+      series:values,labels,chart:{type:'donut',height:420},colors,
+      plotOptions:{pie:{donut:{size:'78%',labels:{show:true,total:{show:true,label:'Total',formatter:(w)=>w.globals.seriesTotals.reduce((a,b)=>a+b,0).toLocaleString()}}}}},
+      legend:{position:'bottom'}
+    }); chart.render(); activeCharts.push(chart);
+  })();
+
+  // TOP: Síntomas
+  (function(){
+    const d=parts.sinDiag, c=parts.sinConf;
+    const keys=uniq(Object.keys(d).concat(Object.keys(c)));
+    const rows=keys.map(k=>[k,d[k]||0,c[k]||0,(d[k]||0)+(c[k]||0)]).sort((a,b)=>b[3]-a[3]).slice(0,10);
+    const tb=document.querySelector('#tablaTopSintomas tbody'); tb.innerHTML='';
+    rows.forEach((r,i)=>{const tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}</td><td class="txtl" title="${r[0]}">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>`; tb.appendChild(tr)});
+  })();
+
+  // Filtros de exclusión para tablas TOP
+  const exCausas=(document.getElementById('fltCausas').value||'');
+  const exAccion=(document.getElementById('fltAcciones').value||'');
+  const exSolDiag=(document.getElementById('fltSolucionDiag').value||'');
+  const exRespDiag=(document.getElementById('fltRespDiag').value||'');
+  const exRespConf=(document.getElementById('fltRespConf').value||'');
+
+  // TOP: Causas (Confirmación)
+  (function(){
+    const base=countBy(conf,'causaAveria'); const totConf=nc||1, tot=total||1;
+    let rows=topEntries(base,999).filter(([k,_])=>!(exCausas && (k||'').toString().toLowerCase().includes(exCausas.toLowerCase())));
+    rows=rows.slice(0,10).map(([k,v])=>[k,v,fmtPct(v,totConf),fmtPct(v,tot)]);
+    const tb=document.querySelector('#tablaTopCausas tbody'); tb.innerHTML='';
+    rows.forEach((r,i)=>{const tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}</td><td class="txtl" title="${r[0]}">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>`; tb.appendChild(tr)});
+  })();
+
+  // TOP: Acciones técnicas (Confirmación)
+  (function(){
+    const base=countBy(conf,'accionTecnicaRealizada'); const totConf=nc||1, tot=total||1;
+    let rows=topEntries(base,999).filter(([k,_])=>!(exAccion && (k||'').toString().toLowerCase().includes(exAccion.toLowerCase())));
+    rows=rows.slice(0,10).map(([k,v])=>[k,v,fmtPct(v,totConf),fmtPct(v,tot)]);
+    const tb=document.querySelector('#tablaTopAcciones tbody'); tb.innerHTML='';
+    rows.forEach((r,i)=>{const tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}</td><td class="txtl" title="${r[0]}">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>`; tb.appendChild(tr)});
+  })();
+
+  // NUEVAS TABLAS TEXTO
+  (function(){ const rows=textTopRows(diag,'solucionCierreInterno',10, nd||1, exSolDiag); fillTopTable('tablaTopSolucionDiag', rows);})();
+  (function(){ const rows=textTopRows(diag,'respuestaTecnicaCompleta',10, nd||1, exRespDiag); fillTopTable('tablaTopRespDiag', rows);})();
+  (function(){ const rows=textTopRows(conf,'respuestaTecnicaCompleta',10, nc||1, exRespConf); fillTopTable('tablaTopRespConf', rows);})();
+
+  /* === DIAGNÓSTICO === */
+  const diagProd=countBy(diag,'producto'); bars('#diag_chartCasosPorProducto',Object.keys(diagProd),Object.values(diagProd),4,'Casos');
+  pieSmart('#diag_chartAmeritaban', Object.keys(countBy(diag,'ameritabanCriticos')), Object.values(countBy(diag,'ameritabanCriticos')), 5);
+  pieSmart('#diag_chartEnviadoADistrito', Object.keys(countBy(diag,'enviadoADistrito')), Object.values(countBy(diag,'enviadoADistrito')), 7);
+  pieSmart('#diag_chartRelacionan', Object.keys(countBy(diag,'relacionanCasos')), Object.values(countBy(diag,'relacionanCasos')), 9);
+  const diagDist=countBy(diag,'distrito'); bars('#diag_chartCasosPorDistrito',Object.keys(diagDist),Object.values(diagDist),11,'Casos');
+  const diagTec=countBy(diag,'tecnologia'); bars('#diag_chartCasosPorTecnologia',Object.keys(diagTec),Object.values(diagTec),12,'Casos');
+
+  /* === CONFIRMACIÓN === */
+  const confProd=countBy(conf,'producto'); bars('#conf_chartCasosPorProducto',Object.keys(confProd),Object.values(confProd),13,'Casos');
+  pieSmart('#conf_chartAmeritaban', Object.keys(countBy(conf,'ameritabanCriticos')), Object.values(countBy(conf,'ameritabanCriticos')), 14);
+  pieSmart('#conf_chartEnviadoADistrito', Object.keys(countBy(conf,'enviadoADistrito')), Object.values(countBy(conf,'enviadoADistrito')), 15);
+  pieSmart('#conf_chartRelacionan', Object.keys(countBy(conf,'relacionanCasos')), Object.values(countBy(conf,'relacionanCasos')), 16);
+  const confDist=countBy(conf,'distrito'); bars('#conf_chartCasosPorDistrito',Object.keys(confDist),Object.values(confDist),0,'Casos');
+  const confTec=countBy(conf,'tecnologia'); bars('#conf_chartCasosPorTecnologia',Object.keys(confTec),Object.values(confTec),2,'Casos');
+}
+
+/* ===== Filtros dinámicos ===== */
+function populateFilters(){
+  const distr=uniq(registros.map(r=>r.distrito)).sort(); const prod=uniq(registros.map(r=>r.producto)).sort(); const trab=uniq(registros.map(r=>r.trabajadoPor)).sort(); const tec=uniq(registros.map(r=>r.tecnologia)).sort();
+  const setSel=(id,arr)=>{ const el=document.getElementById(id); if(!el) return; const cur=el.value; el.innerHTML='<option value=\"\">Todos</option>'+arr.map(x=>`<option>${x}</option>`).join(''); el.value=cur||''; };
+  setSel('filterDistrito',distr); setSel('filterProducto',prod); setSel('filterTrabajadoPor',trab);
+  setSel('chartFilterDistrito',distr); setSel('chartFilterProducto',prod);
+  const tecSel=document.getElementById('chartFilterTecnologia'); const cur=tecSel.value; tecSel.innerHTML='<option value=\"\">Todos</option>'+tec.map(x=>`<option>${x}</option>`).join(''); tecSel.value=cur||'';
+}
+
+/* ===== Inicialización ===== */
+function wireSymptomFilters(){
+  const fd=document.getElementById('sintomaFilterDiag');
+  const sd=document.getElementById('sintomaSelectDiag');
+  const fc=document.getElementById('sintomaFilterConf');
+  const sc=document.getElementById('sintomaSelectConf');
+  if(fd && sd){
+    fd.addEventListener('input', e=>renderSintomas('sintomaSelectDiag', e.target.value));
+  }
+  if(fc && sc){
+    fc.addEventListener('input', e=>renderSintomas('sintomaSelectConf', e.target.value));
+  }
+  // Render inicial completo
+  renderSintomas('sintomaSelectDiag','');
+  renderSintomas('sintomaSelectConf','');
+}
+
+const init=()=>{load(); document.getElementById('headerKpiValue').textContent=registros.length.toLocaleString(); populateFilters(); wireSymptomFilters();};
+init();
+</script>
+</body>
+</html>
