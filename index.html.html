@@ -158,33 +158,10 @@
 
         <!-- CAMBIO: buscador + select de Síntoma (Diagnóstico) -->
        <div class="fg">
-  <label>DISTRITO</label>
-  <select name="distrito" required>
-    <option value="">Seleccione.</option>
-    <option>METRO 1</option>
-    <option>METRO 2</option>
-    <option>METRO 3</option>
-    <option>ESTE</option>
-    <option>NORTE 1</option>
-    <option>NORTE 2</option>
-    <option>SUR</option>
-  </select>
+
 </div>
 
-<!-- NUEVO: GRUPO RESPONSABLE -->
-<div class="fg">
-  <label>GRUPO RESPONSABLE</label>
-  <select name="grupoResponsable" required>
-    <option value="">Seleccione.</option>
-    <option>AVERIA MAYOR PLANTA EXTERNA</option>
-    <option>DISTRITO</option>
-    <option>HELD DESK</option>
-    <option>MANTENIMIENTO PLANTA EXTERNA</option>
-    <option>DIAGNOSTICO</option>
-    <option>SOPORTE OS CAMPO</option>
-     <option>OTRO</option>
-  </select>
-</div>
+
 
 <!-- CAMBIO: buscador + select de Síntoma (Diagnóstico) -->
 <div class="fg" style="grid-column:1/-1">
@@ -207,7 +184,20 @@
         <!-- No obligatorio -->
         <div class="fg"><label>Respuesta Tecnica Completa del Caso Anterior al Critico</label><textarea name="satisfaccionTecnico"></textarea></div>
 
-
+      <!-- NUEVO: GRUPO RESPONSABLE -->
+<div class="fg">
+  <label>GRUPO RESPONSABLE</label>
+  <select name="grupoResponsable" required>
+    <option value="">Seleccione.</option>
+    <option>AVERIA MAYOR PLANTA EXTERNA</option>
+    <option>DISTRITO</option>
+    <option>HELD DESK</option>
+    <option>MANTENIMIENTO PLANTA EXTERNA</option>
+    <option>DIAGNOSTICO</option>
+    <option>SOPORTE OS CAMPO</option>
+     <option>OTRO</option>
+  </select>
+</div>
         <div class="fg"><label>¿Satisfacción del cliente en la reparación del CPAF? (si aplica)</label><select name="satisfaccionCPAF"><option value="">Seleccione.</option><option>POSITIVA</option><option>NEGATIVA</option></select></div>
 
         <div class="fg" style="grid-column:1/-1"><label>Respuesta Tecnica completa</label><textarea name="respuestaTecnicaCompleta"></textarea></div>
