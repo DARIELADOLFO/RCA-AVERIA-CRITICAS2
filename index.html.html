@@ -157,12 +157,41 @@
         <div class="fg"><label>DISTRITO</label><select name="distrito" required><option value="">Seleccione.</option><option>METRO 1</option><option>METRO 2</option><option>METRO 3</option><option>ESTE</option><option>NORTE 1</option><option>NORTE 2</option><option>SUR</option></select></div>
 
         <!-- CAMBIO: buscador + select de Síntoma (Diagnóstico) -->
-        <div class="fg" style="grid-column:1/-1">
-          <label>SÍNTOMA</label>
-          <input id="sintomaFilterDiag" placeholder="Buscar síntoma… (filtra la lista)"/>
-          <select name="sintoma" id="sintomaSelectDiag" required></select>
-        </div>
+       <div class="fg">
+  <label>DISTRITO</label>
+  <select name="distrito" required>
+    <option value="">Seleccione.</option>
+    <option>METRO 1</option>
+    <option>METRO 2</option>
+    <option>METRO 3</option>
+    <option>ESTE</option>
+    <option>NORTE 1</option>
+    <option>NORTE 2</option>
+    <option>SUR</option>
+  </select>
+</div>
 
+<!-- NUEVO: GRUPO RESPONSABLE -->
+<div class="fg">
+  <label>GRUPO RESPONSABLE</label>
+  <select name="grupoResponsable" required>
+    <option value="">Seleccione.</option>
+    <option>AVERIA MAYOR PLANTA EXTERNA</option>
+    <option>DISTRITO</option>
+    <option>HELD DESK</option>
+    <option>MANTENIMIENTO PLANTA EXTERNA</option>
+    <option>DIAGNOSTICO</option>
+    <option>SOPORTE OS CAMPO</option>
+     <option>OTRO</option>
+  </select>
+</div>
+
+<!-- CAMBIO: buscador + select de Síntoma (Diagnóstico) -->
+<div class="fg" style="grid-column:1/-1">
+  <label>SÍNTOMA</label>
+  <input id="sintomaFilterDiag" placeholder="Buscar síntoma… (filtra la lista)"/>
+  <select name="sintoma" id="sintomaSelectDiag" required></select>
+</div>
         <div class="fg"><label>TECNOLOGIA</label><select name="tecnologia" required><option value="">Seleccione.</option><option>FIBRA</option><option>COBRE</option><option>SATELITAL</option></select></div>
         <div class="fg"><label>PARÁMETROS DE LÍNEA</label><select name="parametrosLinea" required><option value="">Seleccione.</option><option>Correctos</option><option>Incorrectos</option></select></div>
         <div class="fg"><label>"Enviado a distrito"</label><select name="enviadoADistrito" required><option value="">Seleccione.</option><option>SI</option><option>NO</option></select></div>
@@ -629,7 +658,7 @@ function importExcel(evt,tipo){
     const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
     const ws=wb.Sheets[wb.SheetNames[0]];
     const json=XLSX.utils.sheet_to_json(ws,{defval:''});
-    const map={
+  const map={
       'PRODUCTO REPORTADO':'producto','PRODUCTO':'producto','PRODUCT':'producto','DISTRITOS':'distrito','DISTRITO':'distrito',
       'SINTOMAS':'sintoma','SINTOMA':'sintoma','CAUSA DE LA AVERIA':'causaAveria','CAUSA DE LA AVERÍA':'causaAveria','CAUSA':'causaAveria',
       'TRABAJADO POR':'trabajadoPor','TRABAJADO':'trabajadoPor','CASOS':'numeroCaso3',
@@ -641,7 +670,12 @@ function importExcel(evt,tipo){
       'CONVERSACION CON CLIENTE':'conversacionCliente','CONVERSACIÓN CON CLIENTE':'conversacionCliente',
       'ACCION TECNICA REALIZADA':'accionTecnicaRealizada','ACCIÓN TÉCNICA REALIZADA':'accionTecnicaRealizada',
       'RESPUESTA TECNICA COMPLETA':'respuestaTecnicaCompleta','RESPUESTA TÉCNICA COMPLETA':'respuestaTecnicaCompleta',
-      'SOLUCIÓN DEL CIERRE INTERNO (SI APLICA)':'solucionCierreInterno','SOLUCION DEL CIERRE INTERNO (SI APLICA)':'solucionCierreInterno'
+      'SOLUCIÓN DEL CIERRE INTERNO (SI APLICA)':'solucionCierreInterno','SOLUCION DEL CIERRE INTERNO (SI APLICA)':'solucionCierreInterno',
+
+      /* 🔥 CLAVES INTERNAS QUE TIENE TU EXCEL EXPORTADO */
+      'TRABAJADOPOR':'trabajadoPor',
+      'NUMEROCASO3':'numeroCaso3',
+      'NUMEROSERVICIO':'numeroServicio'
     };
     const imported=json.map(row=>{
       const r={id:String(Date.now())+Math.random().toString(36).slice(2),tipo,fecha:new Date().toISOString().split('T')[0],hora:new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'})};
@@ -692,30 +726,97 @@ function exportByCola(tipo){
 function clearAll(){if(!confirm('¿Borrar todo?')) return; registros=[]; save(); showToast('Datos borrados'); populateFilters(); loadHistorico(); updateCharts();}
 
 /* ===== Modal edición ===== */
-function inputRow(name,label,value='',type='text'){ return `<div class="fg"><label>${label}</label><input name="${name}" value="${(value??'').toString().replace(/"/g,'&quot;')}" type="${type}"/></div>`;}
-function selectRow(name,label,opts,value=''){ const options = ['','SI','NO'].includes(opts?.[0]) ? opts : ['','SI','NO']; return `<div class="fg"><label>${label}</label><select name="${name}">${options.map(o=>`<option ${String(value)===String(o)?'selected':''}>${o}</option>`).join('')}</select></div>`;}
-function textareaRow(name,label,value=''){ return `<div class="fg"><label>${label}</label><textarea name="${name}">${(value??'')}</textarea></div>`;}
+function inputRow(name,label,value='',type='text'){
+  return `
+    <div class="fg">
+      <label>${label}</label>
+      <input name="${name}" 
+             value="${(value ?? '').toString().replace(/"/g,'&quot;')}" 
+             type="${type}"/>
+    </div>`;
+}
+
+function selectRow(name,label,opts,value=''){
+  // opts: array de opciones. Si viene vacío, pone ['','SI','NO'] por defecto
+  const options = (Array.isArray(opts) && opts.length)
+    ? opts
+    : ['','SI','NO'];
+
+  return `
+    <div class="fg">
+      <label>${label}</label>
+      <select name="${name}">
+        ${options.map(o=>`
+          <option ${String(value)===String(o)?'selected':''}>
+            ${o}
+          </option>`).join('')}
+      </select>
+    </div>`;
+}
+
+function textareaRow(name,label,value=''){
+  return `
+    <div class="fg">
+      <label>${label}</label>
+      <textarea name="${name}">${(value ?? '')}</textarea>
+    </div>`;
+}
+
 function toolsRow(value=''){
-  const vals=(value||'').split(',').map(s=>s.trim());
-  const isOt=vals.some(v=>v.startsWith('OTROS'));
-  const otrosText=isOt?(vals.find(v=>v.startsWith('OTROS'))||'').replace(/^OTROS:\s*/,''):''; const checked=(k)=> vals.includes(k)?'checked':'';
+  const vals = (value || '').split(',').map(s=>s.trim()).filter(Boolean);
+  const isOt = vals.some(v => v.startsWith('OTROS'));
+  const otrosText = isOt
+    ? (vals.find(v=>v.startsWith('OTROS')) || '').replace(/^OTROS:\s*/,'')
+    : '';
+
+  const checked = (k)=> vals.includes(k) ? 'checked' : '';
+
   return `
     <div class="fg" style="grid-column:1/-1">
       <label>Herramientas (multi)</label>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px;margin-top:6px">
-        ${['KUNAI','SACS','NMIS','NETCRACKET','SISTEMA DE PUERTOS','ORION','SMART WIFI','NCE-FAN'].map(k=>`<label><input type="checkbox" name="herramientas[]" value="${k}" ${checked(k)}> ${k}</label>`).join('')}
-        <label><input type="checkbox" name="herramientas[]" value="OTROS" ${isOt?'checked':''} onchange="toggleOtrosHerramientasEdit(this)"> OTROS</label>
+        ${['KUNAI','SACS','NMIS','NETCRACKET','SISTEMA DE PUERTOS','ORION','SMART WIFI','NCE-FAN']
+          .map(k=>`
+            <label>
+              <input type="checkbox" name="herramientas[]" value="${k}" ${checked(k)}>
+              ${k}
+            </label>`).join('')}
+        <label>
+          <input type="checkbox" name="herramientas[]" value="OTROS" ${isOt?'checked':''} onchange="toggleOtrosHerramientasEdit(this)">
+          OTROS
+        </label>
       </div>
-      <input type="text" name="herramientasOtros" placeholder="Especifique OTROS" style="margin-top:8px; ${isOt?'':'display:none'}" value="${otrosText}">
+      <input type="text" 
+             name="herramientasOtros" 
+             placeholder="Especifique OTROS" 
+             style="margin-top:8px; ${isOt ? '' : 'display:none'}" 
+             value="${otrosText}">
     </div>`;
 }
+
 function toggleOtrosHerramientasEdit(cb){
-  const input=cb.closest('.fg').querySelector('input[name="herramientasOtros"]');
-  if(!input) return; input.style.display=cb.checked?'block':'none'; if(!cb.checked) input.value='';
+  const input = cb.closest('.fg').querySelector('input[name="herramientasOtros"]');
+  if(!input) return;
+  input.style.display = cb.checked ? 'block' : 'none';
+  if(!cb.checked) input.value = '';
 }
 function openEditModal(rec){
   const m=document.getElementById('editModal');
   const cont=document.getElementById('editFormContainer');
+
+  const opcionesGrupo = [
+    '',
+    'DISTRITO',
+    'HELP DESK',
+    'DIAGNOSTICO',
+    'AVERIA MAYOR PLANTA EXTERNA',
+    'SOPORTE OS CAMPO',
+    'GESTION REDUCCION DE AVERIA',
+    'RELACIONES CON CLIENTES',
+    'MANTENIMIENTO PLANTA EXTERNA',
+    'OTROS'
+  ];
+
   if(rec.tipo==='Diagnóstico'){
     cont.innerHTML=`<form id="editForm" onsubmit="submitEdit('${rec.id}','Diagnóstico');return false;">
       <div class="grid">
@@ -725,6 +826,9 @@ function openEditModal(rec){
         ${inputRow('producto','PRODUCTO',rec.producto)}
         ${inputRow('statusServicio','STATUS DEL SERVICIO',rec.statusServicio)}
         ${inputRow('distrito','DISTRITO',rec.distrito)}
+
+        ${selectRow('grupoResponsable','Grupo responsable del caso anterior al crítico',opcionesGrupo,rec.grupoResponsable)}
+
         ${inputRow('sintoma','SINTOMA',rec.sintoma)}
         ${inputRow('tecnologia','TECNOLOGIA',rec.tecnologia)}
         ${inputRow('parametrosLinea','PARÁMETROS DE LÍNEA',rec.parametrosLinea)}
@@ -756,6 +860,9 @@ function openEditModal(rec){
         ${inputRow('producto','Producto',rec.producto)}
         ${inputRow('tecnologia','Tecnología',rec.tecnologia)}
         ${inputRow('distrito','Distrito',rec.distrito)}
+
+        ${selectRow('grupoResponsable','Grupo responsable del caso anterior al crítico',opcionesGrupo,rec.grupoResponsable)}
+
         ${inputRow('sintoma','Síntoma',rec.sintoma)}
         ${textareaRow('causaAveria','Causa de la Avería',rec.causaAveria)}
         ${textareaRow('accionTecnicaRealizada','Acción técnica realizada',rec.accionTecnicaRealizada)}
@@ -774,8 +881,10 @@ function openEditModal(rec){
       </div>
     </form>`;
   }
+
   m.style.display='flex';
 }
+
 function closeEditModal(){document.getElementById('editModal').style.display='none'}
 function submitEdit(id,tipo){
   const f=document.getElementById('editForm'); const fd=new FormData(f);
