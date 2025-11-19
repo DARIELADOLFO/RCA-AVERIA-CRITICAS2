@@ -257,7 +257,7 @@
         <div class="fg"><label>Respuesta técnica completa</label><textarea name="respuestaTecnicaCompleta"></textarea></div>
         <div class="fg"><label>Conversación con cliente</label><select name="conversacionCliente" onchange="toggleOtros(this,'convClienteOtros')"><option value="">Seleccione.</option><option>CONFIRMADO, AVERÍA SE SOLUCIONÓ</option><option>CONFIRMADO, SIGUE CON AVERÍA</option><option>CERRADO SIN CONFIRMAR</option><option value="Otros">Otros</option></select><input name="convClienteOtros" style="display:none;margin-top:8px" placeholder="Especifique"></div>
         <div class="fg"><label>¿Dónde estuvo la oportunidad?</label><textarea name="oportunidadCaso"></textarea></div>
-        <div class="fg"><label>¿Ameritaban críticos?</label><select name="ameritabanCriticos" required><option value="">Seleccione.</option><option>SI</option><option>NO</option></select></div>
+        <div class="fg"><label>¿Debió ser crítico según los casos previos? críticos?</label><select name="ameritabanCriticos" required><option value="">Seleccione.</option><option>SI</option><option>NO</option></select></div>
         <!-- No obligatorio -->
         <div class="fg"><label>Satisfacción Cliente (Técnico)</label><select name="satisfaccionTecnico"><option value="">Seleccione.</option><option>POSITIVA</option><option>NEGATIVA</option></select></div>
         <div class="fg"><label>¿Se relacionan los 3 casos?</label><select name="relacionanCasos" required><option value="">Seleccione.</option><option>SI</option><option>NO</option></select></div>
@@ -991,8 +991,8 @@ function renderResumen(data,diag,conf){
       <div class="mini"><div class="t">Enviado a Distrito (SI) — Total</div><div class="v">${envAllSI}</div><div class="p">${fmtPct(envAllSI,total)}</div></div>
       <div class="mini"><div class="t">Enviado a Distrito (SI) — Diag</div><div class="v">${envDiagSI}</div><div class="p">${fmtPct(envDiagSI,nd)} · ${fmtPct(envDiagSI,total)} total</div></div>
       <div class="mini"><div class="t">Enviado a Distrito (SI) — Conf</div><div class="v">${envConfSI}</div><div class="p">${fmtPct(envConfSI,nc)} · ${fmtPct(envConfSI,total)} total</div></div>
-      <div class="mini"><div class="t">¿Ameritaban críticos? (Diag)</div><div class="v">SI ${critDiag['SI']||0} / NO ${critDiag['NO']||0}</div><div class="p">SI ${fmtPct(critDiag['SI']||0,nd)} · NO ${fmtPct(critDiag['NO']||0,nd)}</div></div>
-      <div class="mini"><div class="t">¿Ameritaban críticos? (Conf)</div><div class="v">SI ${critConf['SI']||0} / NO ${critConf['NO']||0}</div><div class="p">SI ${fmtPct(critConf['SI']||0,nc)} · NO ${fmtPct(critConf['NO']||0,nc)}</div></div>
+      <div class="mini"><div class="t">¿Debió ser crítico según los casos previos? críticos? (Diag)</div><div class="v">SI ${critDiag['SI']||0} / NO ${critDiag['NO']||0}</div><div class="p">SI ${fmtPct(critDiag['SI']||0,nd)} · NO ${fmtPct(critDiag['NO']||0,nd)}</div></div>
+      <div class="mini"><div class="t">¿Debió ser crítico según los casos previos? críticos? (Conf)</div><div class="v">SI ${critConf['SI']||0} / NO ${critConf['NO']||0}</div><div class="p">SI ${fmtPct(critConf['SI']||0,nc)} · NO ${fmtPct(critConf['NO']||0,nc)}</div></div>
       <div class="mini"><div class="t">¿Se relacionan los 3 casos? (Conf)</div><div class="v">SI ${relConf['SI']||0} / NO ${relConf['NO']||0}</div><div class="p">SI ${fmtPct(relConf['SI']||0,nc)} · NO ${fmtPct(relConf['NO']||0,nc)}</div></div>
       <div class="mini"><div class="t">Acción técnica TOP (Conf)</div><div class="v">${accTop.k}</div><div class="p">${accTop.v} | ${fmtPct(accTop.v,nc)} conf · ${fmtPct(accTop.v,total)} total</div></div>
     </div>`;
