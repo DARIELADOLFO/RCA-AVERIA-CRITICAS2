@@ -648,28 +648,54 @@ function importExcel(evt,tipo){
     const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
     const ws=wb.Sheets[wb.SheetNames[0]];
     const json=XLSX.utils.sheet_to_json(ws,{defval:''});
-  const map={
-      'PRODUCTO REPORTADO':'producto','PRODUCTO':'producto','PRODUCT':'producto','DISTRITOS':'distrito','DISTRITO':'distrito',
-      'SINTOMAS':'sintoma','SINTOMA':'sintoma','CAUSA DE LA AVERIA':'causaAveria','CAUSA DE LA AVERÍA':'causaAveria','CAUSA':'causaAveria',
-      'TRABAJADO POR':'trabajadoPor','TRABAJADO':'trabajadoPor','CASOS':'numeroCaso3',
-      'NÚMERO DE SERVICIO':'numeroServicio','NUMERO DE SERVICIO':'numeroServicio','NUMERO DEL SERVICIO':'numeroServicio',
-      'TECNOLOGIA':'tecnologia','TECNOLOGÍA':'tecnologia','ESTATUS':'statusServicio','STATUS':'status',
-      'FECHA CREACION':'fechaCreacion','FECHA CREACIÓN':'fechaCreacion','FECHA DE ENTRADA':'fechaEntrada',
-      'ENVIADO A DISTRITO (SÍ/NO)':'enviadoADistrito','ENVIADO A DISTRITO':'enviadoADistrito',
-      '¿AMERITABAN SER CRÍTICOS?':'ameritabanCriticos','¿SE RELACIONAN LOS 3 CASOS?':'relacionanCasos',
-      'CONVERSACION CON CLIENTE':'conversacionCliente','CONVERSACIÓN CON CLIENTE':'conversacionCliente',
-      'ACCION TECNICA REALIZADA':'accionTecnicaRealizada','ACCIÓN TÉCNICA REALIZADA':'accionTecnicaRealizada',
-      'RESPUESTA TECNICA COMPLETA':'respuestaTecnicaCompleta','RESPUESTA TÉCNICA COMPLETA':'respuestaTecnicaCompleta',
-      'SOLUCIÓN DEL CIERRE INTERNO (SI APLICA)':'solucionCierreInterno','SOLUCION DEL CIERRE INTERNO (SI APLICA)':'solucionCierreInterno',
+const map={
 
-      /* 🔥 CLAVES INTERNAS QUE TIENE TU EXCEL EXPORTADO */
-      'TRABAJADOPOR':'trabajadoPor',
-      'NUMEROCASO3':'numeroCaso3',
-      'NUMEROSERVICIO':'numeroServicio'
-    };
+  // Core fields
+  'FECHA':'fecha',
+  'HORA':'hora',
+  'TIPO':'tipo',
+  'TRABAJADOPOR':'trabajadoPor',
+  'NUMEROSERVICIO':'numeroServicio',
+  'NUMEROCASO3':'numeroCaso3',
+
+  // Status
+  'STATUS':'status',
+  'STATUSCONFOTROS':'statusConfOtros',
+  'STATUSSERVICIO':'statusServicio',
+
+  // Product + Tech + Zone
+  'PRODUCTO':'producto',
+  'TECNOLOGIA':'tecnologia',
+  'DISTRITO':'distrito',
+
+  // Symptoms / root cause
+  'SINTOMA':'sintoma',
+  'CAUSAAVERIA':'causaAveria',
+  'ACCIONTECNICAREALIZADA':'accionTecnicaRealizada',
+  'RESPUESTATECNICACOMPLETA':'respuestaTecnicaCompleta',
+
+  // Others
+  'CONVERSACIONCLIENTE':'conversacionCliente',
+  'OPORTUNIDADCASO':'oportunidadCaso',
+
+  // Criticals
+  'AMERITABANCRITICOS':'ameritabanCriticos',
+  'RELACIONANCASOS':'relacionanCasos',
+  'ENVIADOADISTRITO':'enviadoADistrito',
+
+  // Comentarios
+  'COMENTARIO':'comentario'
+};
+
     const imported=json.map(row=>{
       const r={id:String(Date.now())+Math.random().toString(36).slice(2),tipo,fecha:new Date().toISOString().split('T')[0],hora:new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'})};
-      Object.keys(row).forEach(k=>{const K=k.toString().toUpperCase().trim();const key=map[K]; if(key) r[key]=row[k]});
+      Object.keys(row).forEach(k=>{
+  const K=k.toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim();
+  const key=map[K];
+  if(key){
+    r[key] = row[k];
+  }
+});
       const d=row['FECHA CREACION']||row['FECHA CREACIÓN']||row['FECHA DE ENTRADA']; if(d){const dt=new Date(d); if(!isNaN(dt)) r.fecha=dt.toISOString().split('T')[0]}
       if(tipo==='Confirmación' && r.status) r.statusServicio=r.status;
       r.enviadoADistrito = r.enviadoADistrito || '';
