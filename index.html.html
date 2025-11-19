@@ -429,7 +429,7 @@
   <div class="card" style="margin-top:8px"><h3 style="text-align:left">Sección Diagnóstico</h3></div>
   <div class="charts">
     <div class="card"><h3>Diagnóstico — Casos por Producto</h3><div class="cwrap" id="diag_chartCasosPorProducto"></div></div>
-    <div class="card"><h3>Diagnóstico — ¿Ameritaban Críticos?</h3><div class="cwrap" id="diag_chartAmeritaban"></div></div>
+    <div class="card"><h3>Diagnóstico-¿Debió ser crítico según los casos previos?</h3><div class="cwrap" id="diag_chartAmeritaban"></div></div>
     <div class="card"><h3>Diagnóstico — Enviado a Distrito (SI/NO)</h3><div class="cwrap" id="diag_chartEnviadoADistrito"></div></div>
     <div class="card"><h3>Diagnóstico — ¿Se Relacionan los 3 Casos?</h3><div class="cwrap" id="diag_chartRelacionan"></div></div>
     <div class="card"><h3>Diagnóstico — Casos por Distrito</h3><div class="cwrap" id="diag_chartCasosPorDistrito"></div></div>
@@ -440,7 +440,7 @@
   <div class="card" style="margin-top:8px"><h3 style="text-align:left">Sección Confirmación</h3></div>
   <div class="charts">
     <div class="card"><h3>Confirmación — Casos por Producto</h3><div class="cwrap" id="conf_chartCasosPorProducto"></div></div>
-    <div class="card"><h3>Confirmación — ¿Ameritaban Críticos?</h3><div class="cwrap" id="conf_chartAmeritaban"></div></div>
+    <div class="card"><h3>Confirmación — ¿Debió ser crítico según los casos previos?</h3><div class="cwrap" id="conf_chartAmeritaban"></div></div>
     <div class="card"><h3>Confirmación — Enviado a Distrito (SI/NO)</h3><div class="cwrap" id="conf_chartEnviadoADistrito"></div></div>
     <div class="card"><h3>Confirmación — ¿Se Relacionan los 3 Casos?</h3><div class="cwrap" id="conf_chartRelacionan"></div></div>
     <div class="card"><h3>Confirmación — Casos por Distrito</h3><div class="cwrap" id="conf_chartCasosPorDistrito"></div></div>
@@ -859,7 +859,7 @@ function openEditModal(rec){
         ${textareaRow('respuestaTecnicaCompleta','Respuesta técnica completa',rec.respuestaTecnicaCompleta)}
         ${inputRow('conversacionCliente','Conversación con cliente',rec.conversacionCliente)}
         ${textareaRow('oportunidadCaso','¿Dónde estuvo la oportunidad?',rec.oportunidadCaso)}
-        ${inputRow('ameritabanCriticos','¿Ameritaban críticos?',rec.ameritabanCriticos)}
+        ${inputRow('ameritabanCriticos','¿Debió ser crítico según los casos previos? críticos?',rec.ameritabanCriticos)}
         ${inputRow('satisfaccionTecnico','Satisfacción Cliente (Técnico)',rec.satisfaccionTecnico)}
         ${inputRow('relacionanCasos','¿Se relacionan los 3 casos?',rec.relacionanCasos)}
         ${inputRow('enviadoADistrito','Enviado a distrito',rec.enviadoADistrito)}
