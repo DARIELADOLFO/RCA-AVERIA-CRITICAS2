@@ -5,24 +5,9 @@ from datetime import datetime
 from streamlit_gsheets import GSheetsConnection
 
 # ---------------------------------------------------------
-# 1. CONFIGURACIÓN
+# CONFIGURACIÓN DE PÁGINA
 # ---------------------------------------------------------
 st.set_page_config(page_title="RCA AVERIAS CRITICAS", layout="wide")
-
-# Lista MAESTRA de todas las columnas posibles (Shared + Diag + Conf)
-COLUMNAS_MAESTRAS = [
-    "ID", "Fecha", "Hora", "Tipo", "TrabajadoPor", "NumeroServicio", 
-    "NumeroCaso3", "Producto", "StatusServicio", "Distrito", "Sintoma", 
-    "Tecnologia", "EnviadoADistrito", "Comentario",
-    # Exclusivos Diagnóstico
-    "ParametrosLinea", "CerradoInterno", "CausaCierreInterno", 
-    "SintomaCierreInterno", "SolucionCierreInterno", "GrupoResponsable", 
-    "SatisfaccionCPAF", "Herramientas", 
-    # Exclusivos Confirmación
-    "CausaAveria", "AccionTecnicaRealizada", "ConversacionCliente", 
-    "OportunidadCaso", "AmeritabanCriticos", "RelacionanCasos", 
-    "SatisfaccionTecnico", "RespuestaTecnicaCompleta"
-]
 
 # Estilos CSS
 st.markdown("""
@@ -34,171 +19,113 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. CONEXIÓN GOOGLE SHEETS
+# CONEXIÓN A GOOGLE SHEETS
 # ---------------------------------------------------------
+# URL de tu Google Sheet (CÁMBIALO POR EL TUYO QUE PUSISTE PÚBLICO)
+# Ejemplo: "https://docs.google.com/spreadsheets/d/TU_ID_LARGO_AQUI/edit?usp=sharing"
+url_sheet = st.secrets["public_gsheets_url"] 
+
+# Crear conexión
 conn = st.connection("gsheets", type=GSheetsConnection)
 
+# Función para cargar datos (con caché de 10 segundos para ver cambios rápido)
 def cargar_datos():
     try:
-        # Leemos la hoja
-        df = conn.read(ttl=5)
-        # Aseguramos que tenga todas las columnas maestras aunque la hoja esté vacía
-        for col in COLUMNAS_MAESTRAS:
-            if col not in df.columns:
-                df[col] = ""
-        return df
+        return conn.read(spreadsheet=url_sheet, ttl=10)
     except:
-        return pd.DataFrame(columns=COLUMNAS_MAESTRAS)
+        return pd.DataFrame()
 
+# Función para guardar datos
 def guardar_registro(nuevo_df):
     try:
-        conn.update(data=nuevo_df)
-        st.cache_data.clear()
+        conn.update(spreadsheet=url_sheet, data=nuevo_df)
+        st.cache_data.clear() # Limpiar caché para ver el cambio de una vez
         return True
     except Exception as e:
         st.error(f"Error al guardar: {e}")
         return False
 
+# Cargar la base de datos al iniciar
 df = cargar_datos()
 
+# Si la hoja está vacía, inicializar columnas (seguridad)
+if df.empty:
+    columnas_base = [
+        "ID", "Fecha", "Hora", "Tipo", "TrabajadoPor", "NumeroServicio", 
+        "NumeroCaso3", "Producto", "StatusServicio", "Distrito", "Sintoma", 
+        "Tecnologia", "EnviadoADistrito", "Comentario"
+    ]
+    df = pd.DataFrame(columns=columnas_base)
+
 # ---------------------------------------------------------
-# 3. INTERFAZ
+# INTERFAZ GRÁFICA
 # ---------------------------------------------------------
-st.title("RCA AVERIAS CRITICAS 📡")
+st.title("RCA AVERIAS CRITICAS - ONLINE 🔴")
+st.markdown(f"**Registros actuales:** {len(df)}")
 
 tab1, tab2, tab3 = st.tabs(["📝 Nuevo Registro", "📋 Histórico", "📊 Dashboard"])
 
-# --- PESTAÑA 1: FORMULARIO DINÁMICO ---
+# --- PESTAÑA 1: NUEVO REGISTRO ---
 with tab1:
-    tipo_proceso = st.radio("Seleccione Proceso:", ["Diagnóstico", "Confirmación"], horizontal=True)
-
-    with st.form("main_form", clear_on_submit=True):
-        st.subheader(f"Datos de {tipo_proceso}")
+    with st.form("formulario_rca", clear_on_submit=True):
+        c1, c2 = st.columns(2)
+        tipo = c1.selectbox("Tipo", ["Diagnóstico", "Confirmación"])
+        trabajado_por = c2.selectbox("Trabajado Por", ["Dariel Peña", "Jorge Hurtado", "Raquel Rodríguez", "Jan Carlos"])
         
-        # CAMPOS COMUNES (Siempre aparecen)
-        c1, c2, c3 = st.columns(3)
-        trabajado_por = c1.selectbox("Trabajado por", ["Dariel Peña", "Jorge Hurtado", "Raquel Rodríguez", "Jan Carlos"])
-        num_servicio = c2.text_input("Número Servicio")
-        num_caso3 = c3.text_input("Número Caso 3")
+        c3, c4, c5 = st.columns(3)
+        servicio = c3.text_input("Número Servicio")
+        caso3 = c4.text_input("Caso 3")
+        producto = c5.selectbox("Producto", ["INTERNET", "IPTV", "DTH", "VOIP"])
         
-        c4, c5, c6 = st.columns(3)
-        producto = c4.selectbox("Producto", ["INTERNET", "IPTV", "DTH", "VOIP", "OTT"])
-        distrito = c5.selectbox("Distrito", ["METRO 1", "METRO 2", "METRO 3", "ESTE", "NORTE", "SUR"])
-        sintoma = c6.selectbox("Síntoma", ["NO NAVEGA", "LENTITUD", "SIN TONO", "IMAGEN PIXELADA", "MODEM ROJO"]) # Pon tu lista completa aquí
+        c6, c7 = st.columns(2)
+        distrito = c6.selectbox("Distrito", ["METRO 1", "METRO 2", "ESTE", "NORTE", "SUR"])
+        sintoma = c7.selectbox("Síntoma", ["NO NAVEGA", "LENTITUD", "SIN TONO", "IMAGEN PIXELADA"]) # Agrega tu lista completa aquí
         
-        c7, c8 = st.columns(2)
-        tecnologia = c7.selectbox("Tecnología", ["FIBRA", "COBRE", "SATELITAL"])
-        enviado = c8.selectbox("Enviado a Distrito", ["SI", "NO"])
-
-        # VARIABLES PARA CAMPOS ESPECÍFICOS (Se llenan según el if)
-        datos_especificos = {} 
-
-        # --- LÓGICA CONDICIONAL ---
-        if tipo_proceso == "Diagnóstico":
-            st.divider()
-            st.markdown("### 🔬 Detalles de Diagnóstico")
-            col_d1, col_d2 = st.columns(2)
-            parametros = col_d1.selectbox("Parámetros de Línea", ["Correctos", "Incorrectos"])
-            cerrado_int = col_d2.selectbox("Cerrado Interno", ["SI", "NO"])
-            
-            herramientas = st.multiselect("Herramientas", ["KUNAI", "SACS", "NMIS", "ORION", "SMART WIFI"])
-            tools_str = ", ".join(herramientas)
-            
-            resp_tecnica = st.text_area("Respuesta Técnica Completa")
-            comentario = st.text_area("Comentario Adicional")
-
-            # Guardamos en el diccionario temporal
-            datos_especificos = {
-                "ParametrosLinea": parametros,
-                "CerradoInterno": cerrado_int,
-                "Herramientas": tools_str,
-                "RespuestaTecnicaCompleta": resp_tecnica,
-                "Comentario": comentario
-            }
-
-        else: # Confirmación
-            st.divider()
-            st.markdown("### ✅ Detalles de Confirmación")
-            causa = st.text_area("Causa de la Avería")
-            accion = st.text_area("Acción Técnica Realizada")
-            conversacion = st.selectbox("Conversación Cliente", ["CONFIRMADO SOLUCIONADO", "CONFIRMADO FALLA", "NO CONTACTADO"])
-            
-            col_c1, col_c2 = st.columns(2)
-            amerita = col_c1.selectbox("¿Debió ser crítico?", ["SI", "NO"])
-            relacion = col_c2.selectbox("¿Se relacionan los 3 casos?", ["SI", "NO"])
-            
-            comentario = st.text_area("Comentario Adicional")
-
-            # Guardamos en el diccionario temporal
-            datos_especificos = {
-                "CausaAveria": causa,
-                "AccionTecnicaRealizada": accion,
-                "ConversacionCliente": conversacion,
-                "AmeritabanCriticos": amerita,
-                "RelacionanCasos": relacion,
-                "Comentario": comentario
-            }
-
-        # --- BOTÓN DE GUARDADO ---
-        submitted = st.form_submit_button(f"💾 Guardar {tipo_proceso}")
+        comentario = st.text_area("Comentario")
         
-        if submitted:
-            # 1. Crear un diccionario con TODAS las columnas vacías por defecto
-            registro_final = {col: "" for col in COLUMNAS_MAESTRAS}
-            
-            # 2. Llenar los datos comunes
-            registro_final.update({
+        enviar = st.form_submit_button("💾 Guardar en Nube")
+        
+        if enviar:
+            # Crear la fila nueva
+            nueva_fila = pd.DataFrame([{
                 "ID": str(datetime.now().timestamp()),
                 "Fecha": datetime.now().strftime("%Y-%m-%d"),
                 "Hora": datetime.now().strftime("%H:%M:%S"),
-                "Tipo": tipo_proceso,
+                "Tipo": tipo,
                 "TrabajadoPor": trabajado_por,
-                "NumeroServicio": num_servicio,
-                "NumeroCaso3": num_caso3,
+                "NumeroServicio": servicio,
+                "NumeroCaso3": caso3,
                 "Producto": producto,
-                "StatusServicio": "Activo",
+                "StatusServicio": "Activo", # Simplificado
                 "Distrito": distrito,
                 "Sintoma": sintoma,
-                "Tecnologia": tecnologia,
-                "EnviadoADistrito": enviado
-            })
+                "Tecnologia": "FIBRA", # Simplificado
+                "EnviadoADistrito": "NO",
+                "Comentario": comentario
+            }])
             
-            # 3. Llenar los datos específicos (sobreescribiendo los vacíos)
-            registro_final.update(datos_especificos)
-            
-            # 4. Crear DataFrame y Guardar
-            nueva_fila = pd.DataFrame([registro_final])
+            # Unir con lo viejo y guardar
             df_actualizado = pd.concat([df, nueva_fila], ignore_index=True)
-            
             if guardar_registro(df_actualizado):
-                st.success("✅ Registro guardado en la Sábana Maestra")
+                st.success("¡Guardado! Tu gerente ya puede verlo.")
                 st.rerun()
 
 # --- PESTAÑA 2: HISTÓRICO ---
 with tab2:
+    if st.button("🔄 Refrescar Datos"):
+        st.cache_data.clear()
+        st.rerun()
+        
     st.dataframe(df, use_container_width=True)
-    st.download_button("📥 Descargar Excel", df.to_csv().encode("utf-8"), "rca_data.csv")
 
 # --- PESTAÑA 3: DASHBOARD ---
 with tab3:
     if not df.empty:
-        k1, k2, k3 = st.columns(3)
-        k1.metric("Total Casos", len(df))
-        k2.metric("Diagnósticos", len(df[df["Tipo"]=="Diagnóstico"]))
-        k3.metric("Confirmaciones", len(df[df["Tipo"]=="Confirmación"]))
+        col1, col2 = st.columns(2)
+        fig1 = px.pie(df, names='Producto', title="Casos por Producto")
+        col1.plotly_chart(fig1, use_container_width=True)
         
-        c1, c2 = st.columns(2)
-        # Gráfico que usa datos comunes (funciona para ambos)
-        fig_prod = px.bar(df, x="Producto", color="Tipo", title="Casos por Producto")
-        c1.plotly_chart(fig_prod, use_container_width=True)
-        
-        # Gráfico que usa datos comunes
-        fig_dist = px.pie(df, names="Distrito", title="Distribución por Distrito")
-        c2.plotly_chart(fig_dist, use_container_width=True)
-        
-        # Gráfico específico (Solo filtra filas que tengan datos)
-        st.subheader("Causas de Avería (Solo Confirmaciones)")
-        df_conf = df[df["Tipo"]=="Confirmación"]
-        if not df_conf.empty:
-            fig_causa = px.bar(df_conf, y="CausaAveria", title="Top Causas")
-            st.plotly_chart(fig_causa, use_container_width=True)
+        fig2 = px.bar(df, x='Distrito', title="Casos por Distrito")
+        col2.plotly_chart(fig2, use_container_width=True)
+    else:
+        st.info("Aún no hay datos.")
